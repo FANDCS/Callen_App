@@ -1,0 +1,7 @@
+[q] command received. Exiting.
+
+[out#0/matroska @ 0x55d6e4d12b00] video:1446946KiB audio:18925KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.041305%
+frame=35403 fps= 18 q=20.0 Lsize= 1466477KiB time=00:20:26.99 bitrate=9790.9kbits/s dup=0 drop=38 speed=0.608x elapsed=0:33:36.63
+
+
+Our applications are available for Android, Linux, and Windows, powered by Flutter for seamless cross-platform performance. As a small hobbyist team of developers and designers, we prioritize your privacy and collect no personal or analytical data. Find our open-source projects on GitHub (https://github.com/FANDCS) under Free And No Data Collection Softwares (FANDCS).
