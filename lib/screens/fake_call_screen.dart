@@ -455,18 +455,28 @@ class _FakeKeypad extends StatelessWidget {
   Widget build(BuildContext context) {
     const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
     return Padding(
-      padding: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.only(top: 20),
       child: Wrap(
         alignment: WrapAlignment.center,
-        spacing: 20,
-        runSpacing: 12,
+        spacing: 14,
+        runSpacing: 14,
         children: keys
-            .map((k) => SizedBox(
-                  width: 36,
-                  child: Text(
-                    k,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white70, fontSize: 20),
+            .map((k) => Container(
+                  width: 52,
+                  height: 52,
+                  decoration: const BoxDecoration(
+                    color: Colors.white12,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      k,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
                 ))
             .toList(),

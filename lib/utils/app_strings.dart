@@ -41,19 +41,19 @@ class AppStrings {
   String get settingsSaved =>
       _isGreek ? 'Οι ρυθμίσεις αποθηκεύτηκαν' : 'Settings saved';
 
-  // --- Ιστορικό κλήσεων ---
-  String get callLogEmpty => _isGreek
-      ? 'Δεν βρέθηκε ιστορικό κλήσεων.\n(Χρειάζεται άδεια READ_CALL_LOG — μόνο σε πραγματική συσκευή Android.)'
-      : 'No call history found.\n(Requires READ_CALL_LOG permission — real Android device only.)';
+  String get callLogEmpty => _isGreek ? 'Δεν έχεις καμία κλήση.' : 'You have no calls.';
+  String get callLogPermissionNeeded => _isGreek
+      ? 'Χρειάζεται άδεια πρόσβασης στο ιστορικό κλήσεων.'
+      : 'Call log access permission is required.';
   String get today => _isGreek ? 'Σήμερα' : 'Today';
   String get yesterday => _isGreek ? 'Χθες' : 'Yesterday';
 
-  // --- Επαφές ---
   String get searchContactsHint =>
       _isGreek ? 'Αναζήτηση επαφών...' : 'Search contacts...';
-  String get contactsEmpty => _isGreek
-      ? 'Δεν βρέθηκαν επαφές.\n(Χρειάζεται άδεια READ_CONTACTS — μόνο σε πραγματική συσκευή Android.)'
-      : 'No contacts found.\n(Requires READ_CONTACTS permission — real Android device only.)';
+  String get contactsEmpty => _isGreek ? 'Δεν έχεις καμία επαφή.' : 'You have no contacts.';
+  String get contactsPermissionNeeded => _isGreek
+      ? 'Χρειάζεται άδεια πρόσβασης στις επαφές.'
+      : 'Contacts access permission is required.';
   String get contactsNoMatch => _isGreek
       ? 'Καμία επαφή δεν ταιριάζει με την αναζήτηση.'
       : 'No contact matches your search.';

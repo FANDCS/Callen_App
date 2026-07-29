@@ -29,13 +29,7 @@ class ContactsScreen extends StatefulWidget {
 class _ContactsScreenState extends State<ContactsScreen> {
   List<ContactEntry> _allContacts = [];
   bool _loading = true;
-  // ΣΗΜΑΝΤΙΚΟ: δεν κρατάμε πλέον ξεχωριστό "_filtered" state το οποίο
-  // ενημερωνόταν από listener/onChanged — αυτό ήταν επιρρεπές σε
-  // desync (π.χ. αν το _load() ολοκληρωνόταν ΜΕΤΑ από ένα keystroke,
-  // ξανάγραφε το _filtered πάνω στο ό,τι είχε πληκτρολογηθεί). Τώρα το
-  // φιλτράρισμα υπολογίζεται ΚΑΤ' ΕΥΘΕΙΑΝ μέσα στο build, μέσω
-  // ValueListenableBuilder πάνω στο ίδιο το controller — είναι η πιο
-  // αξιόπιστη, εγγυημένη-να-ενημερώνεται μέθοδος στο Flutter.
+  bool _permissionGranted = true;
   final _searchController = TextEditingController();
 
   @override
@@ -54,7 +48,10 @@ class _ContactsScreenState extends State<ContactsScreen> {
     final granted = await widget.contactsService.requestPermission();
     if (!granted) {
       if (!mounted) return;
-      setState(() => _loading = false);
+      setState(() {
+        _permissionGranted = false;
+        _loading = false;
+      });
       return;
     }
     final contacts = await widget.contactsService.getContacts(
@@ -63,6 +60,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
     contacts.sort((a, b) => a.displayName.compareTo(b.displayName));
     if (!mounted) return;
     setState(() {
+      _permissionGranted = true;
       _allContacts = contacts;
       _loading = false;
     });
@@ -150,6 +148,26 @@ class _ContactsScreenState extends State<ContactsScreen> {
   Widget _buildList(List<ContactEntry> filtered, AppStrings s) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    if (!_permissionGranted) {
+      return RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          children: [
+            const SizedBox(height: 120),
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Text(s.contactsPermissionNeeded, textAlign: TextAlign.center),
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     if (_allContacts.isEmpty) {

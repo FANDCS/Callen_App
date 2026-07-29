@@ -27,6 +27,7 @@ class CallLogScreen extends StatefulWidget {
 class _CallLogScreenState extends State<CallLogScreen> {
   List<CallEntry> _entries = [];
   bool _loading = true;
+  bool _permissionGranted = true;
 
   @override
   void initState() {
@@ -37,14 +38,13 @@ class _CallLogScreenState extends State<CallLogScreen> {
   Future<void> _load() async {
     final callsGranted = await widget.callsService.requestPermissions();
     if (!callsGranted) {
-      setState(() => _loading = false);
+      setState(() {
+        _permissionGranted = false;
+        _loading = false;
+      });
       return;
     }
 
-    // Φέρνουμε τις επαφές μία φορά, φτιάχνουμε lookup table
-    // (κανονικοποιημένος αριθμός -> όνομα) και το χρησιμοποιούμε για να
-    // συμπληρώσουμε ονόματα που το ίδιο το call log δεν έδωσε (συχνό σε
-    // Samsung/One UI, όπου δεν αποθηκεύεται πάντα cached name).
     final contactsGranted = await widget.contactsService.requestPermission();
     final Map<String, String> nameByNumber = {};
     if (contactsGranted) {
@@ -68,6 +68,7 @@ class _CallLogScreenState extends State<CallLogScreen> {
 
     if (!mounted) return;
     setState(() {
+      _permissionGranted = true;
       _entries = entries;
       _loading = false;
     });
@@ -130,6 +131,29 @@ class _CallLogScreenState extends State<CallLogScreen> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    if (!_permissionGranted) {
+      return RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          children: [
+            const SizedBox(height: 120),
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Text(
+                  widget.strings.callLogPermissionNeeded,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     if (_entries.isEmpty) {
