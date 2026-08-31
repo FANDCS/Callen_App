@@ -3,7 +3,7 @@
 </p>
 
 <div align="center">
-  <a href="https://flopdroid.wordpress.com/?page_id=324">
+  <a href="/assets/icons/phonelefter_trans.png">
     <img src="project image url" height="100" alt="Callen Logo">
   </a>
   <h1>Callen</h1>
