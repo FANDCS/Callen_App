@@ -19,7 +19,7 @@
 ### Android
 - F-droid
 - Uptodown
-- ApkPure
+- [ApkPure](https://apkpure.com/p/gr.fandcs.callen)
 
 ### Windows
 - Uptodown
