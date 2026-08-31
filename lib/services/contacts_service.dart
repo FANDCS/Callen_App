@@ -1,27 +1,27 @@
 import '../models/contact_entry.dart';
+import '../utils/app_strings.dart';
 
-/// Interface πρόσβασης στις επαφές της συσκευής.
+const deviceSourceId = 'device';
+const simSourceId = 'sim';
+
 abstract class ContactsService {
   Future<bool> requestPermission();
 
-  /// Αν το [sourceIds] είναι null ή κενό, επιστρέφει επαφές από όλες
-  /// τις πηγές (accounts) της συσκευής (προεπιλογή). Αν δοθούν
-  /// συγκεκριμένα IDs, φέρνει επαφές μόνο από αυτές τις πηγές,
-  /// αφαιρώντας διπλότυπα (ίδιος αριθμός τηλεφώνου).
-  Future<List<ContactEntry>> getContacts({List<String>? sourceIds});
+  // `strings` is optional so existing call sites keep compiling, but pass it
+  // whenever available so returned names/labels are localized correctly
+  // instead of falling back to Greek.
+  Future<List<ContactEntry>> getContacts({
+    List<String>? sourceIds,
+    AppStrings? strings,
+  });
 
-  /// Λίστα διαθέσιμων πηγών επαφών στη συσκευή (π.χ. λογαριασμός
-  /// Google, Samsung account, τοπική συσκευή) — id + εμφανιζόμενο
-  /// όνομα, για να τα δείξει το Settings screen ως επιλογές.
-  Future<List<ContactSource>> getAvailableSources();
+  Future<List<ContactSource>> getAvailableSources({AppStrings? strings});
 
-  /// Ανοίγει την προεπιλεγμένη εφαρμογή Επαφών της συσκευής,
-  /// δείχνοντας τη συγκεκριμένη επαφή (native "view contact" ecran).
-  Future<void> openExternalContact(String contactId);
+  Future<void> openExternalContact(String contactId, {AppStrings? strings});
 }
 
 class ContactSource {
-  final String id; // "$type|$name", μοναδικό αναγνωριστικό
+  final String id; 
   final String displayName;
   const ContactSource({required this.id, required this.displayName});
 }

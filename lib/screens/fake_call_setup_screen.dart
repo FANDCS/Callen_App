@@ -5,11 +5,11 @@ import '../utils/app_strings.dart';
 
 const _fakeCallChannel = MethodChannel('gr.fandcs.callen/fakecall');
 
-/// Οθόνη ρύθμισης για την "ψεύτικη κλήση". Το scheduling γίνεται πλέον
-/// μέσω native Android AlarmManager (όχι απλό Dart Timer) — δουλεύει
-/// και με την εφαρμογή στο background, όχι μόνο ενώ είναι ανοιχτή στο
-/// προσκήνιο. (Αν η εφαρμογή είναι εντελώς killed, δεν εγγυάται ακόμα
-/// — αυτό θα χρειαζόταν πλήρες notification system.)
+
+
+
+
+
 class FakeCallSetupScreen extends StatefulWidget {
   final AppStrings strings;
   const FakeCallSetupScreen({super.key, required this.strings});
@@ -36,8 +36,8 @@ class _FakeCallSetupScreenState extends State<FakeCallSetupScreen> {
     final number = _numberController.text.trim();
     final s = widget.strings;
 
-    // Χρειάζεται για την ειδοποίηση του foreground service που κρατάει
-    // την εφαρμογή "ζωντανή" στο background μέχρι να χτυπήσει η κλήση.
+    
+    
     await Permission.notification.request();
 
     await _fakeCallChannel.invokeMethod('schedule', {

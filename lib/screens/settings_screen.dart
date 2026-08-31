@@ -3,10 +3,8 @@ import '../services/contacts_service.dart';
 import '../services/settings_store.dart';
 import '../utils/app_strings.dart';
 
-/// Ρυθμίσεις εφαρμογής: θέμα εμφάνισης, γλώσσα, πηγή επαφών, και
-/// χειροκίνητη ρύθμιση server συγχρονισμού. Το sync engine δεν υπάρχει
-/// ακόμα — αυτή η φόρμα απλά αποθηκεύει τοπικά τις τιμές, έτοιμες για
-/// όταν φτιαχτεί.
+const bool _showOnlineBackupSection = false;
+
 class SettingsScreen extends StatefulWidget {
   final ThemeMode themeMode;
   final ValueChanged<ThemeMode> onThemeModeChanged;
@@ -34,8 +32,11 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _urlController;
   late final TextEditingController _apiKeyController;
+  late final TextEditingController _deviceIdController;
+  late final TextEditingController _encryptionPasswordController;
   bool _syncEnabled = false;
   bool _saved = false;
+  String _syncBackend = 'supabase';
   List<ContactSource> _availableSources = [];
   late Set<String> _selectedSources;
   bool _loadingSources = true;
@@ -45,7 +46,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _urlController = TextEditingController(text: widget.store.syncServerUrl);
     _apiKeyController = TextEditingController(text: widget.store.syncApiKey);
+    _deviceIdController = TextEditingController(text: widget.store.syncDeviceId);
+    _encryptionPasswordController =
+        TextEditingController(text: widget.store.syncEncryptionPassword);
     _syncEnabled = widget.store.syncEnabled;
+    _syncBackend = widget.store.syncBackend;
     _selectedSources = widget.store.contactSources.toSet();
     _loadSources();
   }
@@ -76,22 +81,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
     widget.store.setContactSources(_selectedSources.toList());
   }
 
+  String _sourceLabel(ContactSource source) {
+    switch (source.id) {
+      case deviceSourceId:
+        return widget.strings.contactSourceDevice;
+      case simSourceId:
+        return widget.strings.contactSourceSim;
+      default:
+        return source.displayName;
+    }
+  }
+
   @override
   void dispose() {
     _urlController.dispose();
     _apiKeyController.dispose();
+    _deviceIdController.dispose();
+    _encryptionPasswordController.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     await widget.store.setSyncServerUrl(_urlController.text.trim());
     await widget.store.setSyncApiKey(_apiKeyController.text.trim());
+    await widget.store.setSyncDeviceId(_deviceIdController.text.trim());
+    await widget.store
+        .setSyncEncryptionPassword(_encryptionPasswordController.text);
+    await widget.store.setSyncBackend(_syncBackend);
     await widget.store.setSyncEnabled(_syncEnabled);
     if (!mounted) return;
     setState(() => _saved = true);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(widget.strings.settingsSaved)),
     );
+  }
+
+  String _serverUrlLabel() {
+    switch (_syncBackend) {
+      case 'firebase':
+        return 'Firebase Project URL / Config';
+      case 'pocketbase':
+        return 'PocketBase URL';
+      default:
+        return 'Supabase URL';
+    }
+  }
+
+  String _apiKeyLabel() {
+    switch (_syncBackend) {
+      case 'firebase':
+        return 'Firebase API Key';
+      case 'pocketbase':
+        return 'PocketBase Admin Token';
+      default:
+        return 'Supabase Anon Key';
+    }
   }
 
   @override
@@ -152,11 +196,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChanged: (v) => v != null ? widget.onLanguageChanged(v) : null,
           ),
           const Divider(height: 32),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text(
-              'Πηγή επαφών',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              widget.strings.contactSourceTitle,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
             ),
           ),
           if (_loadingSources)
@@ -165,81 +209,127 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Center(child: CircularProgressIndicator()),
             )
           else if (_availableSources.isEmpty)
-            const ListTile(
-              leading: Icon(Icons.info_outline),
-              title: Text('Δεν βρέθηκαν πολλαπλές πηγές επαφών'),
-              subtitle: Text(
-                'Θα χρησιμοποιηθούν όλες οι επαφές της συσκευής.',
-              ),
+            ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: Text(widget.strings.contactSourceEmpty),
+              subtitle: Text(widget.strings.contactSourceEmptySubtitle),
             )
           else ...[
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
-                'Επίλεξε μία ή περισσότερες πηγές. Αν δεν επιλέξεις '
-                'καμία, χρησιμοποιούνται όλες. Τα διπλότυπα (ίδιος '
-                'αριθμός σε πάνω από μία πηγή) αφαιρούνται αυτόματα.',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+                widget.strings.contactSourceInstructions,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ),
             ..._availableSources.map((source) => CheckboxListTile(
-                  title: Text(source.displayName),
+                  title: Text(_sourceLabel(source)),
                   value: _selectedSources.contains(source.id),
                   onChanged: (v) => _toggleSource(source.id, v ?? false),
                 )),
           ],
-          const Divider(height: 32),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(
-              widget.strings.settingsSync,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-            ),
-          ),
-          SwitchListTile(
-            title: Text(widget.strings.syncEnable),
-            subtitle: Text(widget.strings.syncEnableSubtitle),
-            value: _syncEnabled,
-            onChanged: (v) => setState(() {
-              _syncEnabled = v;
-              _saved = false;
-            }),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              controller: _urlController,
-              onChanged: (_) => setState(() => _saved = false),
-              decoration: InputDecoration(
-                labelText: widget.strings.syncServerUrl,
-                hintText: 'https://mysync.example.com',
-                border: const OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.url,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              controller: _apiKeyController,
-              onChanged: (_) => setState(() => _saved = false),
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: widget.strings.syncApiKey,
-                border: const OutlineInputBorder(),
+
+          if (_showOnlineBackupSection) ...[
+            const Divider(height: 32),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text(
+                widget.strings.settingsSync,
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: FilledButton.icon(
-              onPressed: _save,
-              icon: Icon(_saved ? Icons.check : Icons.save_outlined),
-              label: Text(_saved ? widget.strings.saved : widget.strings.save),
+            SwitchListTile(
+              title: Text(widget.strings.syncEnable),
+              subtitle: Text(widget.strings.syncEnableSubtitle),
+              value: _syncEnabled,
+              onChanged: (v) => setState(() {
+                _syncEnabled = v;
+                _saved = false;
+              }),
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: DropdownButtonFormField<String>(
+                initialValue: _syncBackend,
+                decoration: InputDecoration(
+                  labelText: widget.strings.syncBackendProvider,
+                  border: const OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'firebase', child: Text('Firebase')),
+                  DropdownMenuItem(value: 'supabase', child: Text('Supabase')),
+                  DropdownMenuItem(value: 'pocketbase', child: Text('PocketBase')),
+                ],
+                onChanged: (v) => setState(() {
+                  _syncBackend = v ?? 'supabase';
+                  _saved = false;
+                }),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                controller: _urlController,
+                onChanged: (_) => setState(() => _saved = false),
+                decoration: InputDecoration(
+                  labelText: _serverUrlLabel(),
+                  border: const OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.url,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                controller: _apiKeyController,
+                onChanged: (_) => setState(() => _saved = false),
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: _apiKeyLabel(),
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                controller: _deviceIdController,
+                onChanged: (_) => setState(() => _saved = false),
+                decoration: InputDecoration(
+                  labelText: widget.strings.syncDeviceIdLabel,
+                  hintText: widget.strings.syncDeviceIdHint,
+                  helperText: widget.strings.syncDeviceIdHelper,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                controller: _encryptionPasswordController,
+                onChanged: (_) => setState(() => _saved = false),
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: widget.strings.syncEncryptionPasswordLabel,
+                  helperText: widget.strings.syncEncryptionPasswordHelper,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: FilledButton.icon(
+                onPressed: _save,
+                icon: Icon(_saved ? Icons.check : Icons.save_outlined),
+                label: Text(_saved ? widget.strings.saved : widget.strings.save),
+              ),
+            ),
+          ],
           const SizedBox(height: 32),
         ],
       ),

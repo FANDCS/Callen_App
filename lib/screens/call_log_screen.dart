@@ -53,7 +53,7 @@ class _CallLogScreenState extends State<CallLogScreen> {
       );
       for (final c in contacts) {
         for (final phone in c.phoneNumbers) {
-          nameByNumber[normalizedPhoneKey(phone)] = c.displayName;
+          nameByNumber[normalizedPhoneKey(phone.number)] = c.displayName;
         }
       }
     }
@@ -182,8 +182,8 @@ class _CallLogScreenState extends State<CallLogScreen> {
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView.builder(
-        // cacheExtent μεγαλύτερο ώστε να προ-χτίζονται λίγα items πριν
-        // μπουν στην οθόνη — μειώνει το jank κατά το scroll.
+        
+        
         cacheExtent: 800,
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
@@ -196,9 +196,9 @@ class _CallLogScreenState extends State<CallLogScreen> {
           final color = AppTheme.callTypeColor(semantic);
           final isMissed = e.type == CallType.missed;
 
-          // RepaintBoundary: απομονώνει κάθε γραμμή σε δικό της layer,
-          // ώστε το scroll να μη ζωγραφίζει ξανά ολόκληρη τη λίστα σε
-          // κάθε frame — αισθητά πιο ομαλό scroll σε μεγάλες λίστες.
+          
+          
+          
           return RepaintBoundary(
             child: Card(
               child: ListTile(

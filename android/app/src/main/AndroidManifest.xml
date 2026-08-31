@@ -1,32 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Ιστορικό κλήσεων -->
     <uses-permission android:name="android.permission.READ_CALL_LOG"/>
-    <!-- Απευθείας κλήση (ACTION_CALL) μέσω flutter_phone_direct_caller -->
     <uses-permission android:name="android.permission.CALL_PHONE"/>
-    <!-- Επαφές -->
     <uses-permission android:name="android.permission.READ_CONTACTS"/>
-    <!-- Internet, θα χρειαστεί αργότερα για το sync (Graph API / Redis) -->
     <uses-permission android:name="android.permission.INTERNET"/>
-    <!-- Ακριβές scheduling για την "Ψεύτικη κλήση" ώστε να χτυπάει
-     στην ακριβή ώρα ακόμα κι αν η εφαρμογή είναι στο background. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-    <!-- Foreground service: κρατάει την εφαρμογή "ζωντανή" όσο
-     μετράει αντίστροφα η ψεύτικη κλήση, με μόνιμη ειδοποίηση. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
-    <!--
-     Package visibility (Android 11+ / API 30+): χωρίς αυτό, το
-     canLaunchUrl() για implicit intents όπως tel: μπορεί να επιστρέφει
-     false ή το launchUrl() να αποτυγχάνει σιωπηλά — η εφαρμογή δεν
-     "βλέπει" ότι υπάρχει app που να χειρίζεται το tel: scheme.
-     Κάνουμε ρητό hand-off (ACTION_DIAL): ανοίγει το προεπιλεγμένο
-     dialer/calling app της συσκευής (π.χ. Samsung) με τον αριθμό ήδη
-     συμπληρωμένο, και από εκεί και πέρα ο χειρισμός της ενεργής
-     κλήσης γίνεται εξ ολοκλήρου από εκείνο — όχι από εμάς.
-    -->
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW"/>
@@ -47,9 +29,9 @@
     </queries>
 
     <application
-        android:label="Κλήσεις"
+        android:label="Callen"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"
             android:exported="true"

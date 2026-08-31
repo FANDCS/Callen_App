@@ -1,17 +1,17 @@
-/// Αντιπροσωπεύει μία εγγραφή στο ιστορικό κλήσεων.
-/// Αυτό το model θα είναι αργότερα κοινό (ή παρόμοιο) με ό,τι
-/// χρησιμοποιεί το shared-sync-core για το sync στο OneDrive.
+
+
+
 enum CallType { incoming, outgoing, missed, rejected, blocked, unknown }
 
 class CallEntry {
-  final String id; // uuid, δημιουργείται τοπικά όταν διαβάζουμε από το call_log
+  final String id; 
   final String phoneNumber;
-  final String? contactName; // null αν ο αριθμός δεν αντιστοιχεί σε επαφή
+  final String? contactName; 
   final CallType type;
   final DateTime timestamp;
   final Duration duration;
-  final String deviceOrigin; // ποια συσκευή κατέγραψε την κλήση
-  final bool synced; // αν έχει ήδη ανέβει στο OneDrive
+  final String deviceOrigin; 
+  final bool synced; 
 
   const CallEntry({
     required this.id,

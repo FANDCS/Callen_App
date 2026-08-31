@@ -1,15 +1,22 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../services/calls_service.dart';
+import '../services/contacts_service.dart';
+import '../services/settings_store.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_strings.dart';
+import '../utils/phone_utils.dart';
 
 class DialerScreen extends StatefulWidget {
   final CallsService callsService;
+  final ContactsService contactsService;
+  final SettingsStore store;
   final AppStrings strings;
   const DialerScreen({
     super.key,
     required this.callsService,
+    required this.contactsService,
+    required this.store,
     required this.strings,
   });
 
@@ -19,6 +26,29 @@ class DialerScreen extends StatefulWidget {
 
 class _DialerScreenState extends State<DialerScreen> {
   final TextEditingController _controller = TextEditingController();
+  Map<String, String> _nameByNumber = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadContactsLookup();
+  }
+
+  Future<void> _loadContactsLookup() async {
+    final granted = await widget.contactsService.requestPermission();
+    if (!granted) return;
+    final contacts = await widget.contactsService.getContacts(
+      sourceIds: widget.store.contactSources,
+    );
+    final map = <String, String>{};
+    for (final c in contacts) {
+      for (final phone in c.phoneNumbers) {
+        map[normalizedPhoneKey(phone.number)] = c.displayName;
+      }
+    }
+    if (!mounted) return;
+    setState(() => _nameByNumber = map);
+  }
 
   @override
   void dispose() {
@@ -49,10 +79,15 @@ class _DialerScreenState extends State<DialerScreen> {
     await widget.callsService.placeCall(number);
   }
 
+  String? _matchedName(String number) {
+    if (number.isEmpty) return null;
+    final key = normalizedPhoneKey(number);
+    if (key.length < 4) return null;
+    return _nameByNumber[key];
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Γράμματα κάτω από κάθε ψηφίο ανάλογα με τη γλώσσα (Ελληνικό
-    // πληκτρολόγιο: ΑΒΓ/ΔΕΖ/... αντί για ABC/DEF/...).
     final letters = widget.strings.keypadLetters;
     final digits = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
 
@@ -81,7 +116,24 @@ class _DialerScreenState extends State<DialerScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(
+            height: 22,
+            child: ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _controller,
+              builder: (context, value, _) {
+                final matched = _matchedName(value.text);
+                if (matched == null) return const SizedBox.shrink();
+                return Text(
+                  matched,
+                  style: TextStyle(
+                    color: AppColors.brand,
+                    fontWeight: FontWeight.w600,
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
           Expanded(
             child: GridView.count(
               crossAxisCount: 3,

@@ -6,8 +6,8 @@ import '../utils/app_strings.dart';
 
 const _ringtoneChannel = MethodChannel('gr.fandcs.callen/ringtone');
 
-/// Πόσο ρίχνει η κλήση αν δεν απαντηθεί, πριν σταματήσει μόνη της
-/// (σαν χαμένη κλήση) — πραγματικές κλήσεις δεν χτυπάνε επ' άπειρον.
+
+
 const _ringTimeout = Duration(seconds: 30);
 
 class FakeCallScreen extends StatefulWidget {
@@ -40,16 +40,12 @@ class _FakeCallScreenState extends State<FakeCallScreen>
 
   late final AnimationController _pulseController = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1600),
-  )..repeat();
+    duration: const Duration(milliseconds: 1400),
+  )..repeat(reverse: true);
 
-  // Ένας δεύτερος, πιο αργός controller για το animated background με
-  // σχήματα — τρέχει σε όλη τη διάρκεια (και ringing και in-call), όχι
-  // μόνο στο ringing, ώστε η οθόνη να μη μοιάζει στατική/ψεύτικη μετά
-  // την αποδοχή.
   late final AnimationController _bgController = AnimationController(
     vsync: this,
-    duration: const Duration(seconds: 6),
+    duration: const Duration(seconds: 240),
   )..repeat();
 
   bool _contentVisible = false;
@@ -59,8 +55,8 @@ class _FakeCallScreenState extends State<FakeCallScreen>
     super.initState();
     _startRinging();
     _ringTimeoutTimer = Timer(_ringTimeout, _missedCall);
-    // Απαλό fade-in του περιεχομένου κατά το άνοιγμα της οθόνης —
-    // αποφεύγει το "σκέτο pop-in" που έδειχνε στατικό/ψεύτικο.
+    
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) setState(() => _contentVisible = true);
     });
@@ -77,8 +73,8 @@ class _FakeCallScreenState extends State<FakeCallScreen>
   }
 
   void _startRinging() {
-    // "play": ήχος + exclusive audio focus -> κάνει pause τα υπόλοιπα
-    // ηχητικά της συσκευής, όπως ακριβώς μια πραγματική κλήση.
+    
+    
     _ringtoneChannel.invokeMethod('play');
     _vibrateLoop();
   }
@@ -90,8 +86,8 @@ class _FakeCallScreenState extends State<FakeCallScreen>
     }
   }
 
-  /// Αν δεν απαντηθεί μέσα στο χρονικό όριο, η κλήση σταματάει μόνη
-  /// της — σαν χαμένη κλήση σε πραγματικό τηλέφωνο.
+  
+  
   void _missedCall() {
     if (_answered || _ended || !mounted) return;
     _decline();
@@ -100,17 +96,17 @@ class _FakeCallScreenState extends State<FakeCallScreen>
   void _decline() {
     _ringTimeoutTimer?.cancel();
     _ended = true;
-    // "release": σταματά τον ήχο ΚΑΙ αφήνει το audio focus — τα άλλα
-    // ηχητικά της συσκευής μπορούν να συνεχίσουν κανονικά.
+    
+    
     _ringtoneChannel.invokeMethod('release');
     if (mounted) Navigator.of(context).pop();
   }
 
   void _answer() {
     _ringTimeoutTimer?.cancel();
-    // "muteRingtone": σταματά μόνο τον ήχο κλήσης, ΚΡΑΤΑΕΙ όμως το
-    // audio focus — τα άλλα ηχητικά παραμένουν σε παύση όσο διαρκεί η
-    // (ψεύτικη) κλήση, ίδια συμπεριφορά με πραγματική κλήση.
+    
+    
+    
     _ringtoneChannel.invokeMethod('muteRingtone');
     _pulseController.stop();
     setState(() {
@@ -138,14 +134,28 @@ class _FakeCallScreenState extends State<FakeCallScreen>
         backgroundColor: const Color(0xFF101513),
         body: Stack(
           children: [
-            // Animated background με απαλά, κινούμενα σχήματα — στυλ
-            // παρόμοιο με τα Material/Pixel animated wallpapers, δίνει
-            // ζωντάνια στην οθόνη αντί για επίπεδο μαύρο φόντο.
+            
+            
+            
             Positioned.fill(
               child: AnimatedBuilder(
                 animation: _bgController,
                 builder: (context, _) =>
                     CustomPaint(painter: _ShapesPainter(_bgController.value)),
+              ),
+            ),
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment.center,
+                    radius: 1.1,
+                    colors: [
+                      Colors.transparent,
+                      const Color(0xFF101513).withValues(alpha: 0.55),
+                    ],
+                  ),
+                ),
               ),
             ),
             SafeArea(
@@ -160,46 +170,68 @@ class _FakeCallScreenState extends State<FakeCallScreen>
                     const SizedBox(height: 24),
                     Text(
                       _answered ? _formattedDuration : s.incomingCall,
-                      style:
-                          const TextStyle(color: Colors.white70, fontSize: 16),
-                    ),
-                    const SizedBox(height: 40),
-                    _AvatarWithPulse(
-                      animation: _pulseController,
-                      ringing: !_answered,
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      widget.callerName,
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.w600,
+                        color: Colors.white70,
+                        fontSize: 16,
+                        shadows: [Shadow(blurRadius: 8, color: Colors.black54)],
                       ),
-                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      widget.callerNumber,
-                      style:
-                          const TextStyle(color: Colors.white54, fontSize: 16),
-                    ),
+                    if (!_showKeypad) ...[
+                      const SizedBox(height: 36),
+                      _AvatarWithPulse(
+                        animation: _pulseController,
+                        ringing: !_answered,
+                      ),
+                      const SizedBox(height: 28),
+                      Text(
+                        widget.callerName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          shadows: [Shadow(blurRadius: 10, color: Colors.black54)],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        widget.callerNumber,
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 16,
+                          shadows: [Shadow(blurRadius: 8, color: Colors.black54)],
+                        ),
+                      ),
+                    ],
                     const Spacer(),
                     if (_answered) ...[
-                      _InCallOptionsGrid(
-                        muted: _muted,
-                        onHold: _onHold,
-                        speaker: _speaker,
-                        showKeypad: _showKeypad,
-                        onToggleMute: () => setState(() => _muted = !_muted),
-                        onToggleHold: () =>
-                            setState(() => _onHold = !_onHold),
-                        onToggleSpeaker: () =>
-                            setState(() => _speaker = !_speaker),
-                        onToggleKeypad: () =>
-                            setState(() => _showKeypad = !_showKeypad),
-                      ),
-                      if (_showKeypad) const _FakeKeypad(),
+                      if (_showKeypad) ...[
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: IconButton(
+                            icon: const Icon(Icons.keyboard_hide,
+                                color: Colors.white70),
+                            tooltip: s.hideKeypad,
+                            onPressed: () =>
+                                setState(() => _showKeypad = false),
+                          ),
+                        ),
+                        const _FakeKeypad(),
+                      ] else
+                        _InCallOptionsGrid(
+                          strings: s,
+                          muted: _muted,
+                          onHold: _onHold,
+                          speaker: _speaker,
+                          showKeypad: _showKeypad,
+                          onToggleMute: () => setState(() => _muted = !_muted),
+                          onToggleHold: () =>
+                              setState(() => _onHold = !_onHold),
+                          onToggleSpeaker: () =>
+                              setState(() => _speaker = !_speaker),
+                          onToggleKeypad: () =>
+                              setState(() => _showKeypad = true),
+                        ),
                       const SizedBox(height: 24),
                     ],
                     Row(
@@ -239,11 +271,11 @@ class _FakeCallScreenState extends State<FakeCallScreen>
   }
 }
 
-/// Ζωγραφίζει 4 απαλά, ημιδιάφανα σχήματα (κύκλοι/blobs) που κινούνται
-/// αργά σε ελλειπτικές τροχιές — καθαρά διακοσμητικό animated
-/// background, στυλ παρόμοιο με τα Material "shape" animations.
+
+
+
 class _ShapesPainter extends CustomPainter {
-  final double t; // 0..1, επαναλαμβανόμενο
+  final double t; 
   _ShapesPainter(this.t);
 
   static const _colors = [
@@ -256,7 +288,7 @@ class _ShapesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (var i = 0; i < _colors.length; i++) {
-      final phase = t * 2 * math.pi + (i * 1.5);
+      final phase = t * 2 * math.pi * 40 + (i * 1.5);
       final cx = size.width * 0.5 +
           size.width * 0.55 * math.cos(phase + i) * (i.isEven ? 1 : -1);
       final cy = size.height * 0.4 + size.height * 0.45 * math.sin(phase * 0.8 + i);
@@ -286,19 +318,51 @@ class _AvatarWithPulse extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 180,
-      height: 180,
+      width: 200,
+      height: 200,
       child: AnimatedBuilder(
         animation: animation,
         builder: (context, _) {
+          final glowScale = ringing ? 1.0 + animation.value * 0.18 : 1.0;
+          final glowOpacity = ringing ? 0.25 + animation.value * 0.25 : 0.0;
           return Stack(
             alignment: Alignment.center,
             children: [
-              if (ringing) ..._buildRings(animation.value),
-              const CircleAvatar(
-                radius: 60,
-                backgroundColor: Colors.white24,
-                child: Icon(Icons.person, size: 64, color: Colors.white70),
+              Transform.scale(
+                scale: glowScale,
+                child: Container(
+                  width: 172,
+                  height: 172,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: glowOpacity),
+                  ),
+                ),
+              ),
+              Container(
+                width: 132,
+                height: 132,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF2E7D32), Color(0xFF5C4D9B)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      blurRadius: 24,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(3),
+                child: const CircleAvatar(
+                  radius: 62,
+                  backgroundColor: Color(0xFF1B221E),
+                  child: Icon(Icons.person, size: 68, color: Colors.white70),
+                ),
               ),
             ],
           );
@@ -306,33 +370,10 @@ class _AvatarWithPulse extends StatelessWidget {
       ),
     );
   }
-
-  List<Widget> _buildRings(double t) {
-    return [0.0, 0.5].map((offset) {
-      final phase = (t + offset) % 1.0;
-      final scale = 1.0 + phase * 0.7;
-      final opacity = (1.0 - phase).clamp(0.0, 1.0);
-      return Opacity(
-        opacity: opacity * 0.5,
-        child: Transform.scale(
-          scale: scale,
-          child: Container(
-            width: 120,
-            height: 120,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.fromBorderSide(
-                BorderSide(color: Colors.white, width: 2),
-              ),
-            ),
-          ),
-        ),
-      );
-    }).toList();
-  }
 }
 
 class _InCallOptionsGrid extends StatelessWidget {
+  final AppStrings strings;
   final bool muted;
   final bool onHold;
   final bool speaker;
@@ -343,6 +384,7 @@ class _InCallOptionsGrid extends StatelessWidget {
   final VoidCallback onToggleKeypad;
 
   const _InCallOptionsGrid({
+    required this.strings,
     required this.muted,
     required this.onHold,
     required this.speaker,
@@ -367,25 +409,25 @@ class _InCallOptionsGrid extends StatelessWidget {
         children: [
           _OptionButton(
             icon: Icons.dialpad,
-            label: 'Πληκτρολόγηση',
+            label: strings.keypadLabel,
             active: showKeypad,
             onTap: onToggleKeypad,
           ),
           _OptionButton(
             icon: muted ? Icons.mic_off : Icons.mic,
-            label: 'Σίγαση',
+            label: strings.muteLabel,
             active: muted,
             onTap: onToggleMute,
           ),
           _OptionButton(
             icon: speaker ? Icons.volume_up : Icons.volume_down,
-            label: 'Ηχείο',
+            label: strings.speakerLabel,
             active: speaker,
             onTap: onToggleSpeaker,
           ),
           _OptionButton(
             icon: Icons.pause_circle_outline,
-            label: 'Αναμονή',
+            label: strings.holdLabel,
             active: onHold,
             onTap: onToggleHold,
           ),
@@ -448,39 +490,78 @@ class _OptionButton extends StatelessWidget {
   }
 }
 
-class _FakeKeypad extends StatelessWidget {
+class _FakeKeypad extends StatefulWidget {
   const _FakeKeypad();
 
   @override
+  State<_FakeKeypad> createState() => _FakeKeypadState();
+}
+
+class _FakeKeypadState extends State<_FakeKeypad> {
+  static const _rows = [
+    ['1', '2', '3'],
+    ['4', '5', '6'],
+    ['7', '8', '9'],
+    ['*', '0', '#'],
+  ];
+
+  final _digits = StringBuffer();
+
+  void _tap(String k) {
+    HapticFeedback.selectionClick();
+    setState(() => _digits.write(k));
+  }
+
+  @override
   Widget build(BuildContext context) {
-    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
-    return Padding(
-      padding: const EdgeInsets.only(top: 20),
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 14,
-        runSpacing: 14,
-        children: keys
-            .map((k) => Container(
-                  width: 52,
-                  height: 52,
-                  decoration: const BoxDecoration(
-                    color: Colors.white12,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      k,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ))
-            .toList(),
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: 28,
+          child: Center(
+            child: Text(
+              _digits.toString(),
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 20,
+                letterSpacing: 3,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        ..._rows.map((row) => Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: row
+                    .map((k) => Material(
+                          color: Colors.white12,
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: () => _tap(k),
+                            child: SizedBox(
+                              width: 52,
+                              height: 52,
+                              child: Center(
+                                child: Text(
+                                  k,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ))
+                    .toList(),
+              ),
+            )),
+      ],
     );
   }
 }

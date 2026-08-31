@@ -7,7 +7,7 @@ import '../models/call_entry.dart';
 import 'calls_service.dart';
 
 class CallsServiceAndroid implements CallsService {
-  final String deviceId; // περνιέται από το app κατά την αρχικοποίηση
+  final String deviceId; 
   final _uuid = const Uuid();
 
   CallsServiceAndroid({required this.deviceId});
@@ -15,7 +15,7 @@ class CallsServiceAndroid implements CallsService {
   @override
   Future<bool> requestPermissions() async {
     final statuses = await [
-      Permission.phone, // καλύπτει το READ_CALL_LOG (ίδια permission group)
+      Permission.phone, 
       Permission.contacts,
     ].request();
 
@@ -48,21 +48,21 @@ class CallsServiceAndroid implements CallsService {
 
   @override
   Future<void> placeCall(String phoneNumber) async {
-    // Ρητό αίτημα CALL_PHONE εδώ (δεν εμπιστευόμαστε αποκλειστικά το
-    // εσωτερικό permission handling του plugin) — αν δεν είναι granted
-    // τη στιγμή της κλήσης, το Android/plugin μπορεί να κάνει fallback
-    // σε γενικό "Άνοιγμα με..." chooser αντί για απευθείας κλήση.
+    
+    
+    
+    
     final status = await Permission.phone.request();
     if (!status.isGranted) {
       throw Exception('Δεν δόθηκε άδεια κλήσης (CALL_PHONE).');
     }
 
-    // ACTION_CALL: η κλήση ξεκινάει απευθείας από εδώ, με ένα πάτημα.
-    // Αμέσως μετά, η οθόνη ενεργής κλήσης που εμφανίζεται είναι πάντα
-    // της προεπιλεγμένης εφαρμογής τηλεφώνου της συσκευής (π.χ.
-    // Samsung Phone app) — αυτό γίνεται αυτόματα από το ίδιο το
-    // Android, ανεξάρτητα ποια εφαρμογή ξεκίνησε την κλήση. Δεν
-    // χρειάζεται δικό μας InCallService για αυτό.
+    
+    
+    
+    
+    
+    
     final success = await FlutterPhoneDirectCaller.callNumber(phoneNumber);
     if (success != true) {
       throw Exception('Δεν ήταν δυνατή η εκκίνηση κλήσης προς $phoneNumber');

@@ -1,16 +1,15 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Απλή, τοπική αποθήκευση ρυθμίσεων (θέμα εμφάνισης + χειροκίνητη
-/// ρύθμιση server συγχρονισμού). Δεν κάνει καθόλου δίκτυο ακόμα — απλά
-/// κρατάει ό,τι βάλει ο χρήστης, ώστε να είναι έτοιμο όταν φτιαχτεί το
-/// πραγματικό sync engine (OneDrive Graph API / Redis).
 class SettingsStore {
   static const _keyThemeMode = 'theme_mode';
-  static const _keyLanguage = 'language'; // 'system' | 'el' | 'en'
-  static const _keyContactSources = 'contact_sources'; // JSON-ish, comma-joined
+  static const _keyLanguage = 'language';
+  static const _keyContactSources = 'contact_sources';
   static const _keySyncServerUrl = 'sync_server_url';
   static const _keySyncApiKey = 'sync_api_key';
   static const _keySyncEnabled = 'sync_enabled';
+  static const _keySyncBackend = 'sync_backend';
+  static const _keySyncDeviceId = 'sync_device_id';
+  static const _keySyncEncryptionPassword = 'sync_encryption_password';
 
   final SharedPreferences _prefs;
   SettingsStore._(this._prefs);
@@ -28,7 +27,6 @@ class SettingsStore {
   Future<void> setLanguage(String value) =>
       _prefs.setString(_keyLanguage, value);
 
-  /// Άδεια λίστα σημαίνει "όλες οι πηγές" (καμία επιλογή = default).
   List<String> get contactSources =>
       _prefs.getStringList(_keyContactSources) ?? [];
   Future<void> setContactSources(List<String> value) =>
@@ -45,4 +43,17 @@ class SettingsStore {
   bool get syncEnabled => _prefs.getBool(_keySyncEnabled) ?? false;
   Future<void> setSyncEnabled(bool value) =>
       _prefs.setBool(_keySyncEnabled, value);
+
+  String get syncBackend => _prefs.getString(_keySyncBackend) ?? 'supabase';
+  Future<void> setSyncBackend(String value) =>
+      _prefs.setString(_keySyncBackend, value);
+
+  String get syncDeviceId => _prefs.getString(_keySyncDeviceId) ?? '';
+  Future<void> setSyncDeviceId(String value) =>
+      _prefs.setString(_keySyncDeviceId, value);
+
+  String get syncEncryptionPassword =>
+      _prefs.getString(_keySyncEncryptionPassword) ?? '';
+  Future<void> setSyncEncryptionPassword(String value) =>
+      _prefs.setString(_keySyncEncryptionPassword, value);
 }

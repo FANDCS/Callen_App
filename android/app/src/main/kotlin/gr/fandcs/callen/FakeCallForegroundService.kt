@@ -10,14 +10,6 @@ import android.os.IBinder
 import android.os.Looper
 import androidx.core.app.NotificationCompat
 
-/**
- * Foreground service: κρατάει τη διεργασία "ζωντανή" όσο μετράει
- * αντίστροφα η ψεύτικη κλήση, με μια μόνιμη ειδοποίηση — αυτό
- * αποτρέπει το Android/Samsung από το να "κοιμίσει" την εφαρμογή στο
- * background πριν προλάβει να χτυπήσει η κλήση (κάτι που απλό
- * AlarmManager δεν εγγυάται σε Samsung λόγω επιθετικού battery
- * management).
- */
 class FakeCallForegroundService : Service() {
     private val handler = Handler(Looper.getMainLooper())
     private var pendingRunnable: Runnable? = null
@@ -36,7 +28,7 @@ class FakeCallForegroundService : Service() {
         pendingRunnable = runnable
         handler.postDelayed(runnable, delaySeconds * 1000L)
 
-        return START_NOT_STICKY
+        return START_STICKY
     }
 
     private fun triggerFakeCall(name: String, number: String) {
@@ -51,19 +43,19 @@ class FakeCallForegroundService : Service() {
     }
 
     private fun buildNotification(): android.app.Notification {
-        val channelId = "fake_call_pending"
+        val channelId = "app_background"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
-                "Ψεύτικη κλήση σε αναμονή",
+                "Εφαρμογή στο παρασκήνιο",
                 NotificationManager.IMPORTANCE_LOW,
             )
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
         }
         return NotificationCompat.Builder(this, channelId)
-            .setContentTitle("Ψεύτικη κλήση προγραμματισμένη")
-            .setContentText("Η εφαρμογή παραμένει ενεργή μέχρι να χτυπήσει.")
+            .setContentTitle("Κλήσεις")
+            .setContentText("Η εφαρμογή τρέχει στο παρασκήνιο")
             .setSmallIcon(android.R.drawable.sym_call_incoming)
             .setOngoing(true)
             .build()

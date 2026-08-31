@@ -2,11 +2,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as native;
 
 import '../models/contact_entry.dart';
+import '../utils/app_strings.dart';
 import '../utils/phone_utils.dart';
 import 'contacts_service.dart';
 
 const _simChannel = MethodChannel('gr.fandcs.callen/sim');
-const simSourceId = 'sim';
+
+// Fallback used only when a caller doesn't pass `strings` (kept for
+// backwards compatibility with call sites that haven't been updated yet).
+const _fallbackStrings = AppStrings(AppLanguage.greek);
 
 class ContactsServiceAndroid implements ContactsService {
   @override
@@ -17,79 +21,79 @@ class ContactsServiceAndroid implements ContactsService {
   }
 
   @override
-  Future<List<ContactSource>> getAvailableSources() async {
-    final accounts = await native.FlutterContacts.accounts.getAll();
-    final sources = accounts
-        .map((a) => ContactSource(
-              id: '${a.type}|${a.name}',
-              displayName: a.name,
-            ))
-        .toList();
-    sources.add(const ContactSource(id: simSourceId, displayName: 'SIM κάρτα'));
-    return sources;
+  Future<List<ContactSource>> getAvailableSources({AppStrings? strings}) async {
+    final s = strings ?? _fallbackStrings;
+    return [
+      ContactSource(id: deviceSourceId, displayName: s.contactSourceDevice),
+      ContactSource(id: simSourceId, displayName: s.contactSourceSim),
+    ];
   }
 
-  Future<List<ContactEntry>> _getSimContacts() async {
-    final result = await _simChannel.invokeMethod('getSimContacts');
-    if (result == null) return [];
-    final list = List<Map<Object?, Object?>>.from(result as List);
-    return list
-        .map((m) {
-          final name = (m['name'] as String?) ?? '';
-          final number = (m['number'] as String?) ?? '';
-          return ContactEntry(
-            id: 'sim-$number',
-            displayName: name.isNotEmpty ? name : number,
-            phoneNumbers: [number],
-          );
-        })
-        .where((c) => c.phoneNumbers.first.isNotEmpty)
-        .toList();
-  }
-
-  @override
-  Future<List<ContactEntry>> getContacts({List<String>? sourceIds}) async {
+  Future<List<ContactEntry>> _getDeviceContacts(AppStrings s) async {
     const properties = {
       native.ContactProperty.name,
       native.ContactProperty.phone,
       native.ContactProperty.photoThumbnail,
     };
+    final raw = await native.FlutterContacts.getAll(properties: properties);
+    return raw
+        .map((c) => ContactEntry(
+              id: c.id ?? '',
+              displayName: (c.displayName?.isNotEmpty ?? false)
+                  ? c.displayName!
+                  : s.unknownContactName,
+              phoneNumbers: c.phones
+                  .map((p) => PhoneEntry(number: p.number, label: _labelFor(p, s)))
+                  .toList(),
+              photoThumbnail: c.photo?.thumbnail,
+            ))
+        .where((c) => c.phoneNumbers.isNotEmpty)
+        .toList();
+  }
 
+  Future<List<ContactEntry>> _getSimContacts() async {
+    try {
+      final result = await _simChannel.invokeMethod('getSimContacts');
+      if (result == null) return [];
+      final list = List<Map<Object?, Object?>>.from(result as List);
+      return list
+          .map((m) {
+            final name = (m['name'] as String?) ?? '';
+            final number = (m['number'] as String?) ?? '';
+            return ContactEntry(
+              id: 'sim-$number',
+              displayName: name.isNotEmpty ? name : number,
+              phoneNumbers: [PhoneEntry(number: number, label: 'SIM')],
+            );
+          })
+          .where((c) => c.phoneNumbers.first.number.isNotEmpty)
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  @override
+  Future<List<ContactEntry>> getContacts({
+    List<String>? sourceIds,
+    AppStrings? strings,
+  }) async {
+    final s = strings ?? _fallbackStrings;
     final entries = <ContactEntry>[];
+    final wantDevice = sourceIds == null || sourceIds.isEmpty || sourceIds.contains(deviceSourceId);
+    final wantSim = sourceIds == null || sourceIds.isEmpty || sourceIds.contains(simSourceId);
 
-    if (sourceIds == null || sourceIds.isEmpty) {
-      final rawContacts =
-          await native.FlutterContacts.getAll(properties: properties);
-      entries.addAll(_mapContacts(rawContacts));
+    if (wantDevice) {
+      entries.addAll(await _getDeviceContacts(s));
+    }
+    if (wantSim) {
       entries.addAll(await _getSimContacts());
-    } else {
-      final wantsSim = sourceIds.contains(simSourceId);
-      final accountSourceIds =
-          sourceIds.where((id) => id != simSourceId).toList();
-
-      if (accountSourceIds.isNotEmpty) {
-        final accounts = await native.FlutterContacts.accounts.getAll();
-        final selectedAccounts = accounts
-            .where((a) => accountSourceIds.contains('${a.type}|${a.name}'))
-            .toList();
-        for (final account in selectedAccounts) {
-          final fromThisAccount = await native.FlutterContacts.getAll(
-            properties: properties,
-            account: account,
-          );
-          entries.addAll(_mapContacts(fromThisAccount));
-        }
-      }
-
-      if (wantsSim) {
-        entries.addAll(await _getSimContacts());
-      }
     }
 
     final seenNumbers = <String>{};
     final deduped = <ContactEntry>[];
     for (final entry in entries) {
-      final key = normalizedPhoneKey(entry.phoneNumbers.first);
+      final key = normalizedPhoneKey(entry.phoneNumbers.first.number);
       if (seenNumbers.add(key)) {
         deduped.add(entry);
       }
@@ -97,22 +101,18 @@ class ContactsServiceAndroid implements ContactsService {
     return deduped;
   }
 
-  List<ContactEntry> _mapContacts(List<native.Contact> raw) {
-    return raw
-        .map((c) => ContactEntry(
-              id: c.id ?? '',
-              displayName: (c.displayName?.isNotEmpty ?? false)
-                  ? c.displayName!
-                  : 'Άγνωστο όνομα',
-              phoneNumbers: c.phones.map((p) => p.number).toList(),
-              photoThumbnail: c.photo?.thumbnail,
-            ))
-        .where((c) => c.phoneNumbers.isNotEmpty)
-        .toList();
+  String _labelFor(native.Phone p, AppStrings s) {
+    final raw = p.label.toString().toLowerCase();
+    if (raw.contains('mobile')) return s.phoneLabelMobile;
+    if (raw.contains('home')) return s.phoneLabelHome;
+    if (raw.contains('work')) return s.phoneLabelWork;
+    if (raw.contains('main')) return s.phoneLabelMain;
+    if (raw.contains('pager')) return s.phoneLabelPager;
+    return s.phoneLabelOther;
   }
 
   @override
-  Future<void> openExternalContact(String contactId) async {
+  Future<void> openExternalContact(String contactId, {AppStrings? strings}) async {
     await native.FlutterContacts.native.showViewer(contactId);
   }
 }

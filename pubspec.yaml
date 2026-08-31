@@ -1,5 +1,5 @@
 name: app_calls
-description: "Εφαρμογή κλήσεων με sync (μέρος του multiplatform app suite)"
+description: "Εφαρμογή κλήσεων με sync (μέρος του multiplatform app suite από FANDCS)"
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -18,13 +18,11 @@ dependencies:
   # --- Κλήσεις / Τηλεφωνία (Android only) ---
   # Call log ιστορικό
   call_log: ^6.0.1
-  # Επαφές συσκευής (v2 API — δες contacts_service_android.dart)
+  # Επαφές συσκευής
   flutter_contacts: ^2.2.2
   # Κλήση αριθμού μέσω system dialer intent (fallback/hand-off χρήση)
   url_launcher: ^6.2.5
-  # Απευθείας κλήση με ένα πάτημα (ACTION_CALL) — μετά αναλαμβάνει η
-  # προεπιλεγμένη εφαρμογή τηλεφώνου της συσκευής (π.χ. Samsung) την
-  # ενεργή οθόνη κλήσης, αυτόματα, χωρίς δικό μας InCallService.
+  # Απευθείας κλήση με ένα πάτημα (ACTION_CALL)
   flutter_phone_direct_caller: ^2.1.1
   # Permissions runtime (READ_CALL_LOG, CALL_PHONE)
   permission_handler: ^12.0.3
@@ -48,6 +46,13 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+
+# --- Ρυθμίσεις Εικονιδίου Εφαρμογής ---
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false
+  image_path: "assets/icons/phonelefter_trans.png"
 
 flutter:
   uses-material-design: true

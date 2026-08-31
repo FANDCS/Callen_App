@@ -24,9 +24,9 @@ const _fakeCallChannel = MethodChannel('gr.fandcs.callen/fakecall');
 final navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
-  // Χρειάζεται πριν από οποιοδήποτε await στο main() όταν θα τρέξει
-  // πλατφόρμα-εξαρτώμενος κώδικας (εδώ: SharedPreferences) πριν το
-  // runApp.
+  
+  
+  
   WidgetsFlutterBinding.ensureInitialized();
   final store = await SettingsStore.load();
   runApp(AppCallsRoot(store: store));
@@ -43,10 +43,10 @@ ThemeMode _themeModeFromString(String value) {
   }
 }
 
-/// Αν η προτίμηση είναι 'system', κοιτάμε τη γλώσσα συσκευής: αν είναι
-/// Ελληνικά χρησιμοποιούμε Ελληνικά, αλλιώς Αγγλικά (default). Αν ο
-/// χρήστης έχει διαλέξει ρητά 'el' ή 'en', το σεβόμαστε ανεξάρτητα από
-/// το σύστημα.
+
+
+
+
 AppLanguage _resolveLanguage(String stored, Locale systemLocale) {
   switch (stored) {
     case 'el':
@@ -70,21 +70,21 @@ class AppCallsRoot extends StatefulWidget {
 
 class _AppCallsRootState extends State<AppCallsRoot> {
   late ThemeMode _themeMode = _themeModeFromString(widget.store.themeMode);
-  late String _languagePref = widget.store.language; // 'system' | 'el' | 'en'
+  late String _languagePref = widget.store.language; 
 
   @override
   void initState() {
     super.initState();
-    // Ακούει πότε το native side (AlarmManager) ξαναφέρνει την
-    // εφαρμογή μπροστά με μια "χτυπημένη" ψεύτικη κλήση.
+    
+    
     _fakeCallChannel.setMethodCallHandler((call) async {
       if (call.method == 'onFakeCallTriggered') {
         final args = Map<String, dynamic>.from(call.arguments as Map);
         _showFakeCallScreen(args['name'] as String, args['number'] as String);
       }
     });
-    // Έλεγχος αν η εφαρμογή μόλις άνοιξε ΕΞΑΙΤΙΑΣ μιας ψεύτικης
-    // κλήσης (cold start από το alarm), όχι μόνο resume από background.
+    
+    
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final pending = await _fakeCallChannel.invokeMethod('consumePending');
       if (pending != null) {
@@ -127,9 +127,9 @@ class _AppCallsRootState extends State<AppCallsRoot> {
     final language = _resolveLanguage(_languagePref, systemLocale);
     final strings = AppStrings(language);
 
-    // Επιλογή πραγματικής ή stub υλοποίησης ανάλογα με την πλατφόρμα.
-    // Android -> πραγματικό telephony access.
-    // Linux/Windows -> stub (δεν υπάρχει GSM hardware).
+    
+    
+    
     final CallsService callsService = Platform.isAndroid
         ? CallsServiceAndroid(deviceId: 'device-placeholder')
         : CallsServiceStub();
@@ -143,10 +143,10 @@ class _AppCallsRootState extends State<AppCallsRoot> {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: _themeMode,
-      // Αυτό μεταφράζει αυτόματα τα ενσωματωμένα Material strings του
-      // Flutter (π.χ. "Show menu" -> "Εμφάνιση μενού", "Paste" ->
-      // "Επικόλληση", "Copy" -> "Αντιγραφή") — δεν τα γράφουμε εμείς,
-      // τα παρέχει ήδη το Flutter SDK για την ελληνική γλώσσα.
+      
+      
+      
+      
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -195,7 +195,7 @@ class HomeShell extends StatefulWidget {
 }
 
 class _HomeShellState extends State<HomeShell> {
-  // Ξεκινάει από το Πληκτρολόγιο (index 1), όχι το Ιστορικό.
+  
   int _index = 1;
   int _previousIndex = 1;
 
@@ -247,7 +247,12 @@ class _HomeShellState extends State<HomeShell> {
         strings: s,
         store: widget.store,
       ),
-      DialerScreen(callsService: widget.callsService, strings: s),
+      DialerScreen(
+        callsService: widget.callsService,
+        contactsService: widget.contactsService,
+        store: widget.store,
+        strings: s,
+      ),
       ContactsScreen(
         contactsService: widget.contactsService,
         callsService: widget.callsService,
@@ -258,8 +263,8 @@ class _HomeShellState extends State<HomeShell> {
 
     final titles = [s.tabHistory, s.tabDialer, s.tabContacts];
 
-    // Κατεύθυνση μετάβασης: πάμε δεξιά αν το νέο tab είναι μετά το
-    // προηγούμενο στη σειρά, αλλιώς αριστερά.
+    
+    
     final movingForward = _index >= _previousIndex;
 
     return Scaffold(

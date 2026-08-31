@@ -47,7 +47,7 @@ class AboutScreen extends StatelessWidget {
               decoration: BoxDecoration(borderRadius: BorderRadius.circular(24)),
               clipBehavior: Clip.antiAlias,
               child: Image.asset(
-                'assets/icons/fandcs_icon.png',
+                'assets/icons/phonelefter_trans.png',
                 fit: BoxFit.contain,
               ),
             ),
@@ -67,6 +67,20 @@ class AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           Text(strings.aboutDescription),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.shield_outlined, size: 18, color: Colors.grey),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  strings.noAnalytics,
+                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 24),
 
           ListTile(

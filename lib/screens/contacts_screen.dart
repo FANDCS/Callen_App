@@ -56,6 +56,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
     }
     final contacts = await widget.contactsService.getContacts(
       sourceIds: widget.store.contactSources,
+      strings: widget.strings,
     );
     contacts.sort((a, b) => a.displayName.compareTo(b.displayName));
     if (!mounted) return;
@@ -74,7 +75,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
       final nameMatch = normalizeForSearch(c.displayName).contains(query);
       final phoneMatch = digitsQuery.isNotEmpty &&
           c.phoneNumbers.any(
-            (p) => p.replaceAll(RegExp(r'[^0-9]'), '').contains(digitsQuery),
+            (p) => p.number.replaceAll(RegExp(r'[^0-9]'), '').contains(digitsQuery),
           );
       return nameMatch || phoneMatch;
     }).toList();
@@ -100,6 +101,47 @@ class _ContactsScreenState extends State<ContactsScreen> {
     ];
     final idx = name.isEmpty ? 0 : name.codeUnitAt(0) % palette.length;
     return palette[idx];
+  }
+
+  // ΑΥΤΗ Η ΜΕΘΟΔΟΣ είναι το picker αριθμού όταν η επαφή έχει
+  // περισσότερους από έναν αριθμούς τηλεφώνου. Αν δεν βλέπεις αυτό το
+  // σχόλιο μέσα στο αρχείο σου μετά την αντικατάσταση, δεν έχεις
+  // εφαρμόσει σωστά αυτό το zip.
+  Future<void> _callContact(ContactEntry c) async {
+    final s = widget.strings;
+    if (c.phoneNumbers.length <= 1) {
+      if (c.phoneNumbers.isEmpty) return;
+      await widget.callsService.placeCall(c.phoneNumbers.first.number);
+      return;
+    }
+    final chosen = await showModalBottomSheet<PhoneEntry>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  s.chooseNumberTitle,
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                ),
+              ),
+              ...c.phoneNumbers.map((p) => ListTile(
+                    leading: const Icon(Icons.call),
+                    title: Text(p.number),
+                    subtitle: Text(p.label),
+                    onTap: () => Navigator.of(context).pop(p),
+                  )),
+            ],
+          ),
+        );
+      },
+    );
+    if (chosen != null) {
+      await widget.callsService.placeCall(chosen.number);
+    }
   }
 
   @override
@@ -213,7 +255,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
           final color = _colorFor(c.displayName);
           final hasPhoto = c.photoThumbnail != null;
           final flag = c.phoneNumbers.isNotEmpty
-              ? flagForPhoneNumber(c.phoneNumbers.first)
+              ? flagForPhoneNumber(c.phoneNumbers.first.number)
               : null;
 
           return RepaintBoundary(
@@ -221,22 +263,24 @@ class _ContactsScreenState extends State<ContactsScreen> {
               child: ListTile(
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                onTap: () =>
-                    widget.contactsService.openExternalContact(c.id),
-                onLongPress: () async {
-                  await Clipboard.setData(
-                    ClipboardData(text: c.phoneNumbers.first),
-                  );
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '${s.numberCopied}: ${c.phoneNumbers.first}',
-                      ),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-                },
+                onTap: () => widget.contactsService
+                    .openExternalContact(c.id, strings: widget.strings),
+                onLongPress: c.phoneNumbers.isEmpty
+                    ? null
+                    : () async {
+                        await Clipboard.setData(
+                          ClipboardData(text: c.phoneNumbers.first.number),
+                        );
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '${s.numberCopied}: ${c.phoneNumbers.first.number}',
+                            ),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
                 leading: CircleAvatar(
                   radius: 22,
                   backgroundColor: color.withValues(alpha: 0.16),
@@ -263,13 +307,20 @@ class _ContactsScreenState extends State<ContactsScreen> {
                       Text(flag, style: const TextStyle(fontSize: 14)),
                       const SizedBox(width: 6),
                     ],
-                    Flexible(child: Text(c.phoneNumbers.first)),
+                    Flexible(
+                      child: Text(
+                        c.phoneNumbers.isEmpty
+                            ? ''
+                            : c.phoneNumbers.length > 1
+                                ? '${c.phoneNumbers.first.number} +${c.phoneNumbers.length - 1}'
+                                : c.phoneNumbers.first.number,
+                      ),
+                    ),
                   ],
                 ),
                 trailing: IconButton.filledTonal(
                   icon: const Icon(Icons.call),
-                  onPressed: () =>
-                      widget.callsService.placeCall(c.phoneNumbers.first),
+                  onPressed: () => _callContact(c),
                 ),
               ),
             ),

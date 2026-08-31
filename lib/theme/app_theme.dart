@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 
-/// Κεντρικό design system της εφαρμογής.
-///
-/// Αντί για το γενικό Material "seed green", διαλέγουμε ρητά μια πιο
-/// σοφιστικέ, βαθιά δασική/σμαραγδί απόχρωση ως brand χρώμα, με ζεστό,
-/// απαλό κόκκινο για χαμένες κλήσεις — πιο εκλεπτυσμένο από το ωμό
-/// Material red.
+
+
+
+
+
+
 class AppColors {
   AppColors._();
 
-  static const Color brand = Color(0xFF0B6E4F); // βαθύ σμαραγδί
+  static const Color brand = Color(0xFF0B6E4F); 
   static const Color brandDark = Color(0xFF063D2C);
-  static const Color incoming = Color(0xFF2E7D32); // πράσινο, εισερχόμενη
-  static const Color outgoing = Color(0xFF1565C0); // μπλε, εξερχόμενη
-  static const Color missed = Color(0xFFD64550); // απαλό κόκκινο, χαμένη
-  static const Color blocked = Color(0xFF6B6B6B); // γκρι, μπλοκαρισμένη
+  static const Color incoming = Color(0xFF2E7D32); 
+  static const Color outgoing = Color(0xFF1565C0); 
+  static const Color missed = Color(0xFFD64550); 
+  static const Color blocked = Color(0xFF6B6B6B); 
 
-  static const Color surfaceTint = Color(0xFFF4F8F6); // ελαφρύ πράσινο-γκρι
+  static const Color surfaceTint = Color(0xFFF4F8F6); 
 }
 
 class AppTheme {
@@ -36,8 +36,8 @@ class AppTheme {
 
     return base.copyWith(
       textTheme: base.textTheme.copyWith(
-        // Μεγάλος αριθμός στο πληκτρολόγιο: λεπτό βάρος, αραιά
-        // διάστιχα ψηφίων — πιο "εκλεπτυσμένο" από το default bold.
+        
+        
         headlineMedium: base.textTheme.headlineMedium?.copyWith(
           fontWeight: FontWeight.w300,
           letterSpacing: 1.5,
@@ -151,8 +151,8 @@ class AppTheme {
     );
   }
 
-  /// Χρώμα ανά τύπο κλήσης — χρησιμοποιείται σε avatars/εικονίδια
-  /// στο ιστορικό κλήσεων.
+  
+  
   static Color callTypeColor(String semanticType) {
     switch (semanticType) {
       case 'incoming':

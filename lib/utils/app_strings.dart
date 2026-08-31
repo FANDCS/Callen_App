@@ -1,8 +1,3 @@
-/// Ελαφρύ, χειροκίνητο σύστημα μεταφράσεων (χωρίς flutter_localizations
-/// gen-l10n, για να μη μπλέξουμε με επιπλέον build step). Καλύπτει το
-/// σύνολο του ορατού κειμένου της εφαρμογής. Τα ενσωματωμένα Material
-/// strings (π.χ. "Show menu", "Paste", "Copy") μεταφράζονται ξεχωριστά,
-/// αυτόματα, μέσω του flutter_localizations στο main.dart.
 enum AppLanguage { greek, english }
 
 class AppStrings {
@@ -11,7 +6,6 @@ class AppStrings {
 
   bool get _isGreek => lang == AppLanguage.greek;
 
-  // --- Πλοήγηση / Μενού ---
   String get tabHistory => _isGreek ? 'Ιστορικό' : 'History';
   String get tabDialer => _isGreek ? 'Πληκτρολόγιο' : 'Dialer';
   String get tabContacts => _isGreek ? 'Επαφές' : 'Contacts';
@@ -19,7 +13,6 @@ class AppStrings {
   String get menuSettings => _isGreek ? 'Ρυθμίσεις' : 'Settings';
   String get menuAbout => _isGreek ? 'Σχετικά' : 'About';
 
-  // --- Ρυθμίσεις ---
   String get settingsTitle => _isGreek ? 'Ρυθμίσεις' : 'Settings';
   String get settingsAppearance => _isGreek ? 'Εμφάνιση' : 'Appearance';
   String get settingsLanguage => _isGreek ? 'Γλώσσα' : 'Language';
@@ -41,6 +34,45 @@ class AppStrings {
   String get settingsSaved =>
       _isGreek ? 'Οι ρυθμίσεις αποθηκεύτηκαν' : 'Settings saved';
 
+  String get contactSourceTitle => _isGreek ? 'Πηγή επαφών' : 'Contact source';
+  String get contactSourceEmpty => _isGreek
+      ? 'Δεν βρέθηκαν πολλαπλές πηγές επαφών'
+      : 'No multiple contact sources found';
+  String get contactSourceEmptySubtitle => _isGreek
+      ? 'Θα χρησιμοποιηθούν όλες οι επαφές της συσκευής.'
+      : 'All contacts on this device will be used.';
+  String get contactSourceInstructions => _isGreek
+      ? 'Επίλεξε μία ή περισσότερες πηγές. Αν δεν επιλέξεις καμία, '
+          'χρησιμοποιούνται όλες. Τα διπλότυπα (ίδιος αριθμός σε πάνω από '
+          'μία πηγή) αφαιρούνται αυτόματα.'
+      : 'Choose one or more sources. If you don\'t choose any, all of '
+          'them are used. Duplicates (the same number in more than one '
+          'source) are removed automatically.';
+  String get contactSourceDevice =>
+      _isGreek ? 'Επαφές συσκευής' : 'Device contacts';
+  String get contactSourceSim => _isGreek ? 'SIM κάρτα' : 'SIM card';
+
+  String get syncBackendProvider =>
+      _isGreek ? 'Πάροχος backend' : 'Backend provider';
+  String get syncDeviceIdLabel => _isGreek
+      ? 'Όνομα/ID αυτής της εγκατάστασης'
+      : 'Name/ID of this install';
+  String get syncDeviceIdHint =>
+      _isGreek ? 'π.χ. leftheris-phone' : 'e.g. leftheris-phone';
+  String get syncDeviceIdHelper => _isGreek
+      ? 'Ξεχωρίζει τα δικά σου δεδομένα μέσα στο database, αν το '
+          'μοιράζεσαι με άλλες συσκευές/χρήστες.'
+      : 'Separates your data within the database, if you share it with '
+          'other devices/users.';
+  String get syncEncryptionPasswordLabel => _isGreek
+      ? 'Κωδικός τοπικής κρυπτογράφησης'
+      : 'Local encryption password';
+  String get syncEncryptionPasswordHelper => _isGreek
+      ? 'Τα δεδομένα κρυπτογραφούνται στη συσκευή σου πριν ανέβουν — '
+          'χωρίς αυτόν τον κωδικό δεν αποκρυπτογραφούνται.'
+      : 'Your data is encrypted on your device before it\'s uploaded — '
+          'without this password it can\'t be decrypted.';
+
   String get callLogEmpty => _isGreek ? 'Δεν έχεις καμία κλήση.' : 'You have no calls.';
   String get callLogPermissionNeeded => _isGreek
       ? 'Χρειάζεται άδεια πρόσβασης στο ιστορικό κλήσεων.'
@@ -58,13 +90,23 @@ class AppStrings {
       ? 'Καμία επαφή δεν ταιριάζει με την αναζήτηση.'
       : 'No contact matches your search.';
   String get numberCopied => _isGreek ? 'Ο αριθμός αντιγράφηκε' : 'Number copied';
+  String get chooseNumberTitle => _isGreek ? 'Επίλεξε αριθμό' : 'Choose a number';
 
-  // --- Πληκτρολόγιο ---
+  String get unknownContactName =>
+      _isGreek ? 'Άγνωστο όνομα' : 'Unknown name';
+  String get phoneLabelMobile => _isGreek ? 'Κινητό' : 'Mobile';
+  String get phoneLabelHome => _isGreek ? 'Οικία' : 'Home';
+  String get phoneLabelWork => _isGreek ? 'Εργασία' : 'Work';
+  String get phoneLabelMain => _isGreek ? 'Κύριο' : 'Main';
+  String get phoneLabelPager => _isGreek ? 'Pager' : 'Pager';
+  String get phoneLabelOther => _isGreek ? 'Άλλο' : 'Other';
+  String get openExternalContactUnsupported => _isGreek
+      ? 'Το άνοιγμα εξωτερικής εφαρμογής επαφών υποστηρίζεται μόνο σε Android.'
+      : 'Opening the external contacts app is only supported on Android.';
+
   String get dialerHint =>
       _isGreek ? 'Πληκτρολόγησε αριθμό' : 'Enter a number';
 
-  /// Γράμματα κάτω από κάθε ψηφίο στο πληκτρολόγιο — ελληνικό ή
-  /// αγγλικό keypad layout ανάλογα με τη γλώσσα.
   Map<String, String> get keypadLetters => _isGreek
       ? const {
           '1': '', '2': 'ΑΒΓ', '3': 'ΔΕΖ',
@@ -79,13 +121,15 @@ class AppStrings {
           '0': '+', '*': '', '#': '',
         };
 
-  // --- Σχετικά ---
   String get aboutTitle => _isGreek ? 'Σχετικά' : 'About';
   String get appName => _isGreek ? 'Κλήσεις' : 'Calls';
   String get version => _isGreek ? 'Έκδοση 0.1.0' : 'Version 0.1.0';
   String get aboutDescription => _isGreek
       ? 'Εφαρμογή διαχείρισης κλήσεων, με ιστορικό, πληκτρολόγιο και επαφές. Μέρος μιας σουίτας εφαρμογών με συγχρονισμό μεταξύ Android και desktop.'
       : 'A calls management app, with history, dialer, and contacts. Part of a suite of apps synced across Android and desktop.';
+  String get noAnalytics => _isGreek
+      ? 'Δεν συλλέγουμε στατιστικά δεδομένα χρήσης.'
+      : 'We do not collect usage statistics.';
   String get orgAndContributors =>
       _isGreek ? 'Οργανισμός & Συντελεστές' : 'Organization & Contributors';
   String get orgSubtitle => _isGreek ? 'FANDCS · Ομάδα' : 'FANDCS · Team';
@@ -101,7 +145,6 @@ class AppStrings {
   String couldNotOpen(String url) =>
       _isGreek ? 'Δεν ήταν δυνατό το άνοιγμα: $url' : 'Could not open: $url';
 
-  // --- Οργανισμός ---
   String get orgDescription => _isGreek
       ? 'Ο οργανισμός/ομάδα πίσω από την ανάπτυξη και τον σχεδιασμό αυτής της εφαρμογής και της υπόλοιπης σουίτας εφαρμογών.'
       : 'The organization/team behind the development and design of this app and the rest of the app suite.';
@@ -109,9 +152,8 @@ class AppStrings {
       _isGreek ? 'Σύνδεσμος GitHub: θα προστεθεί σύντομα.' : 'GitHub link: coming soon.';
   String get contributors => _isGreek ? 'Συντελεστές' : 'Contributors';
   String get developer => _isGreek ? 'Developer' : 'Developer';
-  String get designer => _isGreek ? 'Designer (θέση διαθέσιμη)' : 'Designer (position open)';
+  String get designer => 'Designer';
 
-  // --- Ψεύτικη κλήση ---
   String get fakeCallTitle => _isGreek ? 'Ψεύτικη κλήση' : 'Fake call';
   String get fakeCallDescription => _isGreek
       ? 'Ρύθμισε πώς θα φαίνεται η εισερχόμενη κλήση και πότε θα "χτυπήσει".'
@@ -131,4 +173,9 @@ class AppStrings {
   String get decline => _isGreek ? 'Απόρριψη' : 'Decline';
   String get answer => _isGreek ? 'Απάντηση' : 'Answer';
   String get endCall => _isGreek ? 'Τερματισμός' : 'End call';
+  String get keypadLabel => _isGreek ? 'Πληκτρολόγηση' : 'Keypad';
+  String get muteLabel => _isGreek ? 'Σίγαση' : 'Mute';
+  String get speakerLabel => _isGreek ? 'Ηχείο' : 'Speaker';
+  String get holdLabel => _isGreek ? 'Αναμονή' : 'Hold';
+  String get hideKeypad => _isGreek ? 'Απόκρυψη πληκτρολογίου' : 'Hide keypad';
 }
