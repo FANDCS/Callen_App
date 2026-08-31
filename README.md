@@ -3,8 +3,8 @@
 </p>
 
 <div align="center">
-  <a href="/assets/icons/phonelefter_trans.png">
-    <img src="project image url" height="100" alt="Callen Logo">
+  <a href="https://github.com/FANDCS/Callen_App">
+    <img src="/assets/icons/phonelefter_trans.png" height="100" alt="Callen Logo">
   </a>
   <h1>Callen</h1>
   This app is provided, updated, and owned by the <b>FANDCS</b> organization.
