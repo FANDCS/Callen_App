@@ -38,4 +38,4 @@
 [Πολιτική Απορρήτου & Όροι Χρήσης στο GitHub](https://raw.githubusercontent.com/FANDCS/main/refs/heads/main/Privacy_Policy_and_Terms_of_Use.md)
 
 #### Τρέχουσα Έκδοση
-`1.1 Beta Release`
+`0.1.0 Beta Release`
