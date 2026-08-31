@@ -1,17 +1,41 @@
-# callen
+<p align="right">
+  <a href="README-gr.md">🇬🇷 Ελληνικά</a>
+</p>
 
-An application that can make calls
+<div align="center">
+  <a href="https://flopdroid.wordpress.com/?page_id=324">
+    <img src="project image url" height="100" alt="Callen Logo">
+  </a>
+  <h1>Callen</h1>
+  This app is provided, updated, and owned by the <b>FANDCS</b> organization.
+</div>
 
-## Getting Started
+## Supported Platforms
+* **Android:** 7+
+* **Windows:** 10, 11
+* **Linux:** All distributions (as AppImage)
 
-This project is a starting point for a Flutter application.
+## Stores - Coming Soon
+### Android
+- F-droid
+- Uptodown
+- ApkPure
 
-A few resources to get you started if this is your first Flutter project:
+### Windows
+- Uptodown
+- GitHub
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+### Linux
+- Flathub
+- GitHub
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Project Contributors
+- 🖥️ [Lefteris Trompakas](https://www.github.com/AndroidCreator5)
+- 🖌️ [Alex_632gr](https://www.instagram.com/alex632gr_/)
+- 🦾 Claude Sonnet 5 (*Anthropic give us a larger free plan*)
+
+## Privacy Policy & Terms of Use
+[Privacy Policy & Terms of Use on GitHub](https://raw.githubusercontent.com/FANDCS/main/refs/heads/main/Privacy_Policy_and_Terms_of_Use.md)
+
+#### Current Version
+`1.1 Beta Release`
