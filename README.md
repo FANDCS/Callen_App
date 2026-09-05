@@ -14,6 +14,9 @@
 This is a simple open source application with fresh and simple ui for making calls with sync between android and linux (maybe and Windows in future). We don't collect any personal or static data. 
 <br>**Beta Release**
 
+### Screenshots
+<img alt="dialer" src="/fastlane/Screenshot_dialer.png" height="400">  <img alt="fake_call" src="/fastlane/Screenshot_fake_call.png" height="400">
+
 
 ## Supported Platforms
 * **Android:** 7+
