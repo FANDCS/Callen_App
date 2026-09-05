@@ -25,11 +25,7 @@ This is a simple open source application with fresh and simple ui for making cal
 <a href="https://apkpure.com/p/gr.fandcs.callen" target="_blank">
   <img alt="Get it on APKPure" src="https://img.shields.io/badge/Get%20it%20on-APKPure-00ca73?style=for-the-badge&logo=android&logoColor=white" />
 
-### Windows
-- Uptodown
-- GitHub
-
-### Linux
+### Linux (under development)
 - Flathub
 - GitHub
 
