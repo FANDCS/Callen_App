@@ -17,9 +17,8 @@
 
 ## Stores - Coming Soon
 ### Android
-- F-droid
-- Uptodown
-- [ApkPure](https://apkpure.com/p/gr.fandcs.callen)
+<a href="https://apkpure.com/p/com.fandcs.callen" target="_blank">
+  <img alt="Get it on APKPure" src="https://img.shields.io/badge/Get%20it%20on-APKPure-00ca73?style=for-the-badge&logo=android&logoColor=white" />
 
 ### Windows
 - Uptodown
