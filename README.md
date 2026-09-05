@@ -22,7 +22,7 @@ This is a simple open source application with fresh and simple ui for making cal
 
 ## Stores - Coming Soon
 ### Android (universal support)
-<a href="https://apkpure.com/p/com.fandcs.callen" target="_blank">
+<a href="https://apkpure.com/p/gr.fandcs.callen" target="_blank">
   <img alt="Get it on APKPure" src="https://img.shields.io/badge/Get%20it%20on-APKPure-00ca73?style=for-the-badge&logo=android&logoColor=white" />
 
 ### Windows
