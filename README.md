@@ -15,8 +15,7 @@ This is a simple open source application with fresh and simple ui for making cal
 <br>**Beta Release**
 
 ### Screenshots
-<img alt="dialer" src="/fastlane/Screenshot_dialer.png" height="400">  <img alt="fake_call" src="/fastlane/Screenshot_fake_call.png" height="400">
-
+<img alt="dialer" src="/fastlane/en-US/images/1.png" height="400">  <img alt="fake_call" src="/fastlane/en-US/images/2.png" height="400">  <img alt="fake_call" src="/fastlane/en-US/images/3.png" height="400">
 
 ## Supported Platforms
 * **Android:** 7+
@@ -41,4 +40,4 @@ This is a simple open source application with fresh and simple ui for making cal
 [Privacy Policy & Terms of Use on GitHub](https://raw.githubusercontent.com/FANDCS/main/refs/heads/main/Privacy_Policy_and_Terms_of_Use.md)
 
 #### Current Version
-`0.1.0 Beta Release`
+`0.1.3 Beta Release`
