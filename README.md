@@ -37,10 +37,9 @@ This is a simple open source application with fresh and simple ui for making cal
   <a href="https://f-droid.org/packages/gr.fandcs.callen/" target="_blank">
     <img alt="F-Droid" src="https://img.shields.io/badge/Get%20it%20on-F--Droid-1976D2?style=for-the-badge&logo=f-droid&logoColor=white">
   </a> -->
-</p>
+
 ### Linux (under development)
 - Flathub
-- GitHub
 
 ## Project Contributors
 - 🖥️ [Lefteris Trompakas](https://www.github.com/AndroidCreator5)
