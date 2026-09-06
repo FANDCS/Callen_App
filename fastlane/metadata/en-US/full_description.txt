@@ -1,6 +1,6 @@
-With that app you can make calls from your contacts and any number (you need a provider for SIM or eSIM). But isn't a classic app because has a ability that named <b>Fake Call</b>. With this ability is useful when you want to leave a place by tricking someone into calling you. Of course isn't so realistic as a real call. Finally this simple application created by <a href="https://github.com/FANDCS">FANDCS</a> and Contributors and you can find it at <a href="https://github.com/FANDCS/Callen_App">Github</a>
+With that app you can make calls from your contacts and any number (you need a provider for SIM or eSIM). But isn't a classic app because has a ability that named <b>Fake Call</b>. With this ability is useful when you want to leave a place by tricking someone into calling you. Of course isn't so realistic as a real call. Finally this simple application created by <a href="https://github.com/FANDCS">FANDCS</a> and Contributors and you can find it at <a href="https://github.com/FANDCS/Callen_App">Github</a>.
 
-Application Info:
+<p>Application Info:
 - Languages (en, el)
 - Sync without data collection
 - Local encrypt
