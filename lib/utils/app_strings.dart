@@ -22,13 +22,26 @@ class AppStrings {
   String get themeLight => _isGreek ? 'Φωτεινό' : 'Light';
   String get themeDark => _isGreek ? 'Σκοτεινό' : 'Dark';
   String get settingsSync =>
-      _isGreek ? 'Συγχρονισμός (χειροκίνητη ρύθμιση)' : 'Sync (manual setup)';
+      _isGreek ? 'Συγχρονισμός ιστορικού κλήσεων' : 'Call history sync';
   String get syncEnable => _isGreek ? 'Ενεργοποίηση συγχρονισμού' : 'Enable sync';
   String get syncEnableSubtitle => _isGreek
-      ? 'Το sync engine δεν είναι έτοιμο ακόμα — απλά αποθηκεύει τις ρυθμίσεις για αργότερα'
-      : 'The sync engine isn\'t ready yet — this just saves the settings for later';
+      ? 'Το ιστορικό κλήσεων κρυπτογραφείται στη συσκευή σου και ανεβαίνει '
+          'στον server που θα ορίσεις παρακάτω.'
+      : 'Your call history is encrypted on this device before it\'s '
+          'uploaded to the server you set below.';
   String get syncServerUrl => _isGreek ? 'Διεύθυνση server (URL)' : 'Server URL';
   String get syncApiKey => _isGreek ? 'API Key / Token' : 'API Key / Token';
+  String get syncTestConnection =>
+      _isGreek ? 'Δοκιμή σύνδεσης' : 'Test connection';
+  String get syncNow => _isGreek ? 'Συγχρονισμός τώρα' : 'Sync now';
+  String get syncConnectionOk =>
+      _isGreek ? 'Η σύνδεση λειτουργεί ✓' : 'Connection works ✓';
+  String get syncSuccessPrefix => _isGreek ? 'Ο συγχρονισμός ολοκληρώθηκε:' : 'Sync complete:';
+  String get syncFailedPrefix => _isGreek ? 'Ο συγχρονισμός απέτυχε:' : 'Sync failed:';
+  String syncPushedCount(int n) =>
+      _isGreek ? '$n ανέβηκαν' : '$n uploaded';
+  String syncPulledCount(int n) =>
+      _isGreek ? '$n κατέβηκαν' : '$n downloaded';
   String get save => _isGreek ? 'Αποθήκευση' : 'Save';
   String get saved => _isGreek ? 'Αποθηκεύτηκε' : 'Saved';
   String get settingsSaved =>

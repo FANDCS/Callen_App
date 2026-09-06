@@ -9,7 +9,9 @@ import 'services/calls_service_stub.dart';
 import 'services/contacts_service.dart';
 import 'services/contacts_service_android.dart';
 import 'services/contacts_service_stub.dart';
+import 'services/local_call_store.dart';
 import 'services/settings_store.dart';
+import 'services/sync/sync_service.dart';
 import 'screens/dialer_screen.dart';
 import 'screens/call_log_screen.dart';
 import 'screens/contacts_screen.dart';
@@ -29,7 +31,13 @@ void main() async {
   
   WidgetsFlutterBinding.ensureInitialized();
   final store = await SettingsStore.load();
-  runApp(AppCallsRoot(store: store));
+  final deviceId = await store.ensureSyncDeviceId();
+  final localCallStore = LocalCallStore();
+  runApp(AppCallsRoot(
+    store: store,
+    deviceId: deviceId,
+    localCallStore: localCallStore,
+  ));
 }
 
 ThemeMode _themeModeFromString(String value) {
@@ -62,7 +70,14 @@ AppLanguage _resolveLanguage(String stored, Locale systemLocale) {
 
 class AppCallsRoot extends StatefulWidget {
   final SettingsStore store;
-  const AppCallsRoot({super.key, required this.store});
+  final String deviceId;
+  final LocalCallStore localCallStore;
+  const AppCallsRoot({
+    super.key,
+    required this.store,
+    required this.deviceId,
+    required this.localCallStore,
+  });
 
   @override
   State<AppCallsRoot> createState() => _AppCallsRootState();
@@ -92,6 +107,14 @@ class _AppCallsRootState extends State<AppCallsRoot> {
         _showFakeCallScreen(args['name'] as String, args['number'] as String);
       }
     });
+
+    // Ήσυχο background sync στην εκκίνηση, χωρίς να μπλοκάρει το UI και
+    // χωρίς να δείχνει τίποτα αν αποτύχει (ο χρήστης βλέπει το αποτέλεσμα
+    // ρητά μόνο όταν πατήσει "Συγχρονισμός τώρα" στις ρυθμίσεις).
+    if (widget.store.syncEnabled) {
+      SyncService(store: widget.store, localStore: widget.localCallStore)
+          .syncNow();
+    }
   }
 
   void _showFakeCallScreen(String name, String number) {
@@ -131,8 +154,11 @@ class _AppCallsRootState extends State<AppCallsRoot> {
     
     
     final CallsService callsService = Platform.isAndroid
-        ? CallsServiceAndroid(deviceId: 'device-placeholder')
-        : CallsServiceStub();
+        ? CallsServiceAndroid(
+            deviceId: widget.deviceId,
+            localStore: widget.localCallStore,
+          )
+        : CallsServiceStub(localStore: widget.localCallStore);
 
     final ContactsService contactsService =
         Platform.isAndroid ? ContactsServiceAndroid() : ContactsServiceStub();
@@ -163,6 +189,7 @@ class _AppCallsRootState extends State<AppCallsRoot> {
         strings: strings,
         languagePref: _languagePref,
         onLanguageChanged: _setLanguagePref,
+        localCallStore: widget.localCallStore,
       ),
     );
   }
@@ -177,6 +204,7 @@ class HomeShell extends StatefulWidget {
   final AppStrings strings;
   final String languagePref;
   final ValueChanged<String> onLanguageChanged;
+  final LocalCallStore localCallStore;
 
   const HomeShell({
     super.key,
@@ -188,6 +216,7 @@ class HomeShell extends StatefulWidget {
     required this.strings,
     required this.languagePref,
     required this.onLanguageChanged,
+    required this.localCallStore,
   });
 
   @override
@@ -218,6 +247,7 @@ class _HomeShellState extends State<HomeShell> {
           languagePref: widget.languagePref,
           onLanguageChanged: widget.onLanguageChanged,
           contactsService: widget.contactsService,
+          localCallStore: widget.localCallStore,
         ),
       ),
     );

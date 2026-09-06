@@ -1,16 +1,16 @@
 import 'package:call_log/call_log.dart' as native;
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:uuid/uuid.dart';
 
 import '../models/call_entry.dart';
 import 'calls_service.dart';
+import 'local_call_store.dart';
 
 class CallsServiceAndroid implements CallsService {
-  final String deviceId; 
-  final _uuid = const Uuid();
+  final String deviceId;
+  final LocalCallStore localStore;
 
-  CallsServiceAndroid({required this.deviceId});
+  CallsServiceAndroid({required this.deviceId, required this.localStore});
 
   @override
   Future<bool> requestPermissions() async {
@@ -26,9 +26,14 @@ class CallsServiceAndroid implements CallsService {
   Future<List<CallEntry>> getCallLog({int? limit}) async {
     final Iterable<native.CallLogEntry> entries = await native.CallLog.get();
 
-    final result = entries.map((e) {
+    // Το native id δεν χρειάζεται να είναι σταθερό εδώ - το
+    // LocalCallStore αναγνωρίζει τις πραγματικά καινούριες κλήσεις μέσω
+    // "φυσικού κλειδιού" (αριθμός+ώρα+διάρκεια+τύπος) και δίνει το δικό
+    // του σταθερό id μόνο σε αυτές. Έτσι η ίδια κλήση δεν "ξαναγεννιέται"
+    // με άλλο id σε κάθε φόρτωση, πράγμα απαραίτητο για το sync.
+    final nativeEntries = entries.map((e) {
       return CallEntry(
-        id: _uuid.v4(),
+        id: '',
         phoneNumber: e.number ?? 'unknown',
         contactName: e.name,
         type: _mapCallType(e.callType),
@@ -40,10 +45,11 @@ class CallsServiceAndroid implements CallsService {
       );
     }).toList();
 
-    if (limit != null && result.length > limit) {
-      return result.sublist(0, limit);
+    final merged = await localStore.mergeFromNative(nativeEntries);
+    if (limit != null && merged.length > limit) {
+      return merged.sublist(0, limit);
     }
-    return result;
+    return merged;
   }
 
   @override

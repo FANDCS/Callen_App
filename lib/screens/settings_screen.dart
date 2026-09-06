@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/contacts_service.dart';
+import '../services/local_call_store.dart';
 import '../services/settings_store.dart';
+import '../services/sync/sync_backend.dart';
+import '../services/sync/sync_service.dart';
 import '../utils/app_strings.dart';
-
-const bool _showOnlineBackupSection = false;
 
 class SettingsScreen extends StatefulWidget {
   final ThemeMode themeMode;
@@ -13,6 +14,7 @@ class SettingsScreen extends StatefulWidget {
   final String languagePref;
   final ValueChanged<String> onLanguageChanged;
   final ContactsService contactsService;
+  final LocalCallStore localCallStore;
 
   const SettingsScreen({
     super.key,
@@ -23,6 +25,7 @@ class SettingsScreen extends StatefulWidget {
     required this.languagePref,
     required this.onLanguageChanged,
     required this.contactsService,
+    required this.localCallStore,
   });
 
   @override
@@ -40,6 +43,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<ContactSource> _availableSources = [];
   late Set<String> _selectedSources;
   bool _loadingSources = true;
+  bool _syncing = false;
 
   @override
   void initState() {
@@ -50,9 +54,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _encryptionPasswordController =
         TextEditingController(text: widget.store.syncEncryptionPassword);
     _syncEnabled = widget.store.syncEnabled;
-    _syncBackend = widget.store.syncBackend;
+    _syncBackend = widget.store.syncBackend == 'firebase'
+        ? 'supabase'
+        : widget.store.syncBackend;
     _selectedSources = widget.store.contactSources.toSet();
     _loadSources();
+    _fillDefaultDeviceId();
+  }
+
+  Future<void> _fillDefaultDeviceId() async {
+    if (_deviceIdController.text.trim().isNotEmpty) return;
+    final generated = await widget.store.ensureSyncDeviceId();
+    if (!mounted) return;
+    setState(() => _deviceIdController.text = generated);
   }
 
   Future<void> _loadSources() async {
@@ -116,12 +130,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _syncNow() async {
+    // Σιγουρευόμαστε ότι ό,τι βλέπει ο χρήστης στα πεδία είναι ήδη
+    // αποθηκευμένο πριν προσπαθήσουμε να συνδεθούμε με αυτό.
+    await _save();
+    setState(() => _syncing = true);
+    final service = SyncService(
+      store: widget.store,
+      localStore: widget.localCallStore,
+    );
+    final result = await service.syncNow();
+    if (!mounted) return;
+    setState(() => _syncing = false);
+    final message = result.ok
+        ? '${widget.strings.syncSuccessPrefix} '
+            '${widget.strings.syncPushedCount(result.pushed)}, '
+            '${widget.strings.syncPulledCount(result.pulled)}'
+        : '${widget.strings.syncFailedPrefix} ${result.error}';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _testConnection() async {
+    setState(() => _syncing = true);
+    try {
+      final backend = SyncService(
+        store: widget.store,
+        localStore: widget.localCallStore,
+      );
+      // Χτίζουμε προσωρινά το backend με ό,τι είναι γραμμένο ΤΩΡΑ στα
+      // πεδία (χωρίς να χρειάζεται πρώτα Save).
+      await widget.store.setSyncServerUrl(_urlController.text.trim());
+      await widget.store.setSyncApiKey(_apiKeyController.text.trim());
+      await widget.store.setSyncBackend(_syncBackend);
+      await backend.testConnection();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(widget.strings.syncConnectionOk)),
+      );
+    } on SyncBackendException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${widget.strings.syncFailedPrefix} ${e.message}')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${widget.strings.syncFailedPrefix} $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _syncing = false);
+    }
+  }
+
   String _serverUrlLabel() {
     switch (_syncBackend) {
-      case 'firebase':
-        return 'Firebase Project URL / Config';
       case 'pocketbase':
         return 'PocketBase URL';
+      case 'custom':
+        return 'Server URL (δικός σου)';
       default:
         return 'Supabase URL';
     }
@@ -129,10 +195,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String _apiKeyLabel() {
     switch (_syncBackend) {
-      case 'firebase':
-        return 'Firebase API Key';
       case 'pocketbase':
-        return 'PocketBase Admin Token';
+        return 'PocketBase Admin/Auth Token';
+      case 'custom':
+        return 'Authorization header (π.χ. Bearer xyz)';
       default:
         return 'Supabase Anon Key';
     }
@@ -229,107 +295,134 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 )),
           ],
 
-          if (_showOnlineBackupSection) ...[
-            const Divider(height: 32),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text(
-                widget.strings.settingsSync,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-              ),
+          const Divider(height: 32),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              widget.strings.settingsSync,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
             ),
-            SwitchListTile(
-              title: Text(widget.strings.syncEnable),
-              subtitle: Text(widget.strings.syncEnableSubtitle),
-              value: _syncEnabled,
+          ),
+          SwitchListTile(
+            title: Text(widget.strings.syncEnable),
+            subtitle: Text(widget.strings.syncEnableSubtitle),
+            value: _syncEnabled,
+            onChanged: (v) => setState(() {
+              _syncEnabled = v;
+              _saved = false;
+            }),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: DropdownButtonFormField<String>(
+              initialValue: _syncBackend,
+              decoration: InputDecoration(
+                labelText: widget.strings.syncBackendProvider,
+                border: const OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'supabase', child: Text('Supabase')),
+                DropdownMenuItem(value: 'pocketbase', child: Text('PocketBase')),
+                DropdownMenuItem(value: 'custom', child: Text('Custom REST (δικός σου server)')),
+              ],
               onChanged: (v) => setState(() {
-                _syncEnabled = v;
+                _syncBackend = v ?? 'supabase';
                 _saved = false;
               }),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: DropdownButtonFormField<String>(
-                initialValue: _syncBackend,
-                decoration: InputDecoration(
-                  labelText: widget.strings.syncBackendProvider,
-                  border: const OutlineInputBorder(),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _urlController,
+              onChanged: (_) => setState(() => _saved = false),
+              decoration: InputDecoration(
+                labelText: _serverUrlLabel(),
+                border: const OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.url,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _apiKeyController,
+              onChanged: (_) => setState(() => _saved = false),
+              obscureText: true,
+              decoration: InputDecoration(
+                labelText: _apiKeyLabel(),
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _deviceIdController,
+              onChanged: (_) => setState(() => _saved = false),
+              decoration: InputDecoration(
+                labelText: widget.strings.syncDeviceIdLabel,
+                hintText: widget.strings.syncDeviceIdHint,
+                helperText: widget.strings.syncDeviceIdHelper,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _encryptionPasswordController,
+              onChanged: (_) => setState(() => _saved = false),
+              obscureText: true,
+              decoration: InputDecoration(
+                labelText: widget.strings.syncEncryptionPasswordLabel,
+                helperText: widget.strings.syncEncryptionPasswordHelper,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _syncing ? null : _save,
+                    icon: Icon(_saved ? Icons.check : Icons.save_outlined),
+                    label: Text(_saved ? widget.strings.saved : widget.strings.save),
+                  ),
                 ),
-                items: const [
-                  DropdownMenuItem(value: 'firebase', child: Text('Firebase')),
-                  DropdownMenuItem(value: 'supabase', child: Text('Supabase')),
-                  DropdownMenuItem(value: 'pocketbase', child: Text('PocketBase')),
-                ],
-                onChanged: (v) => setState(() {
-                  _syncBackend = v ?? 'supabase';
-                  _saved = false;
-                }),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
-                controller: _urlController,
-                onChanged: (_) => setState(() => _saved = false),
-                decoration: InputDecoration(
-                  labelText: _serverUrlLabel(),
-                  border: const OutlineInputBorder(),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _syncing ? null : _testConnection,
+                    icon: const Icon(Icons.wifi_tethering),
+                    label: Text(widget.strings.syncTestConnection),
+                  ),
                 ),
-                keyboardType: TextInputType.url,
-              ),
+              ],
             ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
-                controller: _apiKeyController,
-                onChanged: (_) => setState(() => _saved = false),
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: _apiKeyLabel(),
-                  border: const OutlineInputBorder(),
-                ),
-              ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: FilledButton.tonalIcon(
+              onPressed: (!_syncEnabled || _syncing) ? null : _syncNow,
+              icon: _syncing
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.sync),
+              label: Text(widget.strings.syncNow),
             ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
-                controller: _deviceIdController,
-                onChanged: (_) => setState(() => _saved = false),
-                decoration: InputDecoration(
-                  labelText: widget.strings.syncDeviceIdLabel,
-                  hintText: widget.strings.syncDeviceIdHint,
-                  helperText: widget.strings.syncDeviceIdHelper,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
-                controller: _encryptionPasswordController,
-                onChanged: (_) => setState(() => _saved = false),
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: widget.strings.syncEncryptionPasswordLabel,
-                  helperText: widget.strings.syncEncryptionPasswordHelper,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: FilledButton.icon(
-                onPressed: _save,
-                icon: Icon(_saved ? Icons.check : Icons.save_outlined),
-                label: Text(_saved ? widget.strings.saved : widget.strings.save),
-              ),
-            ),
-          ],
+          ),
           const SizedBox(height: 32),
         ],
       ),
