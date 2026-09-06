@@ -24,9 +24,20 @@ This is a simple open source application with fresh and simple ui for making cal
 
 ## Stores - Coming Soon
 ### Android (universal support)
-<a href="https://apkpure.com/p/gr.fandcs.callen" target="_blank">
-  <img alt="Get it on APKPure" src="https://img.shields.io/badge/Get%20it%20on-APKPure-00ca73?style=for-the-badge&logo=android&logoColor=white" />
-
+<p align="left">
+  
+  <a href="https://apkpure.com/p/gr.fandcs.callen" target="_blank">
+    <img alt="APKPure" src="https://img.shields.io/badge/Get%20it%20on-APKPure-00ca73?style=for-the-badge&logo=android&logoColor=white">
+  </a>
+<!--  
+  <a href="https://gr.fandcs.callen.en.uptodown.com/android" target="_blank">
+    <img alt="Uptodown" src="https://img.shields.io/badge/Get%20it%20on-Uptodown-002B49?style=for-the-badge&logo=android&logoColor=white">
+  </a>
+  <!-- F-Droid 
+  <a href="https://f-droid.org/packages/gr.fandcs.callen/" target="_blank">
+    <img alt="F-Droid" src="https://img.shields.io/badge/Get%20it%20on-F--Droid-1976D2?style=for-the-badge&logo=f-droid&logoColor=white">
+  </a> -->
+</p>
 ### Linux (under development)
 - Flathub
 - GitHub
