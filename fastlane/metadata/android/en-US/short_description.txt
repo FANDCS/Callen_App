@@ -1,0 +1,1 @@
+This is a simple open source application with fresh and simple ui for making calls with sync between android and linux (maybe and Windows in future) with pocketbase, supabase and universal (url, api, auth methods). We don't collect any personal or static data. 
