@@ -1,1 +1,3 @@
-This is a simple open source application with fresh and simple ui for making calls with sync between android and linux (maybe and Windows in future) with pocketbase, supabase and universal (url, api, auth methods). We don't collect any personal or static data. 
+An open-source calling application featuring a clean, minimalist UI designed for seamless synchronization between Android and Linux, with planned Windows support. It leverages PocketBase and Supabase with universal URL, API, and authentication methods for flexible connectivity. Built with absolute privacy in mind, the platform collects zero personal or static data, ensuring your communications remain entirely confidential and under your control.
+
+
