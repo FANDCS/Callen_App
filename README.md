@@ -1,5 +1,4 @@
 <p align="right">
-  <a href="README-gr.md">🇬🇷 Ελληνικά</a>
 </p>
 
 <div align="center">
