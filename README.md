@@ -10,8 +10,20 @@
 </div>
 
 ## Description
-This is a simple open source application with fresh and simple ui for making calls with sync between android and linux (maybe and Windows in future). We don't collect any personal or static data. 
-<br>**Beta Release**
+Need a quick excuse to leave an awkward meeting or a boring gathering? Callen is here to save the day!
+
+Featuring a fresh and simple UI, the app allows you to trigger a realistic fake phone call on demand. You can fully customize the experience by entering a custom caller name and phone number, and choose whether the incoming call screen looks like your phone's native OEM user interface or the app's clean design. Best of all, Callen respects your privacy: we do not collect any personal or tracking data.
+
+Features:
+- Supports 32bit and 64bit (universal support)
+- Free (no freemium, no ads, no pro plan)
+- Modern UI
+- Support Fake and Real calls
+- Choose Contact source (between Device and SIM) 
+- No internet connection
+- Sync with **yours** choice server (Supabase, Pocketbase, Custom REST)
+- Local encryption before sync data to server
+- Multi-platform
 
 ### Screenshots
 <img alt="dialer" src="/fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" height="400">  <img alt="fake_call" src="/fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" height="400">  <img alt="fake_call" src="/fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" height="400">
