@@ -1,9 +1,14 @@
-With that app you can make calls from your contacts and any number (you need a provider for SIM or eSIM). But isn't a classic app because has a ability that named <b>Fake Call</b>. With this ability is useful when you want to leave a place by tricking someone into calling you. Of course isn't so realistic as a real call. Finally this simple application created by <a href="https://github.com/FANDCS">FANDCS</a> and Contributors and you can find it at <a href="https://github.com/FANDCS/Callen_App">Github</a>.
+Need a quick excuse to leave an awkward meeting or a boring gathering? Callen is here to save the day!
 
-<p>Application Info:
-- Languages (en, el)
-- Sync without data collection
-- Local encrypt
-- Free in price
-- Open Source
-- Easy to use
+Featuring a fresh and simple UI, the app allows you to trigger a realistic fake phone call on demand. You can fully customize the experience by entering a custom caller name and phone number, and choose whether the incoming call screen looks like your phone's native OEM user interface or the app's clean design. Best of all, Callen respects your privacy: we do not collect any personal or tracking data.
+
+Features:
+- Supports 32bit and 64bit (universal support)
+- Free (no freemium, no ads, no pro plan)
+- Modern UI
+- Support Fake and Real calls
+- Choose Contact source (between Device and SIM) 
+- No internet connection
+- Sync with **yours** choice server (Supabase, Pocketbase, Custom REST)
+- Local encryption before sync data to server
+- Multi-platform
