@@ -7,6 +7,8 @@ import '../theme/app_theme.dart';
 import '../utils/app_strings.dart';
 import '../utils/phone_utils.dart';
 
+enum _Filter { all, missed, incoming, outgoing, rejected }
+
 class CallLogScreen extends StatefulWidget {
   final CallsService callsService;
   final ContactsService contactsService;
@@ -29,205 +31,387 @@ class _CallLogScreenState extends State<CallLogScreen> {
   bool _loading = true;
   bool _permissionGranted = true;
 
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+  _Filter _filter = _Filter.all;
+  bool _searchVisible = false;
+
+  final _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(() {
+      setState(() => _searchQuery = _searchController.text.trim().toLowerCase());
+    });
     _load();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
     final callsGranted = await widget.callsService.requestPermissions();
     if (!callsGranted) {
-      setState(() {
-        _permissionGranted = false;
-        _loading = false;
-      });
+      if (!mounted) return;
+      setState(() { _permissionGranted = false; _loading = false; });
       return;
     }
 
+    // Show raw entries immediately (fast)
+    final rawEntries = await widget.callsService.getCallLog();
+    if (!mounted) return;
+    setState(() { _entries = rawEntries; _loading = false; });
+
+    // Enrich with contact names in background
     final contactsGranted = await widget.contactsService.requestPermission();
-    final Map<String, String> nameByNumber = {};
-    if (contactsGranted) {
-      final contacts = await widget.contactsService.getContacts(
-        sourceIds: widget.store.contactSources,
-      );
-      for (final c in contacts) {
-        for (final phone in c.phoneNumbers) {
-          nameByNumber[normalizedPhoneKey(phone.number)] = c.displayName;
-        }
+    if (!contactsGranted || !mounted) return;
+
+    final contacts = await widget.contactsService.getContacts(
+      sourceIds: widget.store.contactSources,
+    );
+    final nameByNumber = <String, String>{};
+    for (final c in contacts) {
+      for (final phone in c.phoneNumbers) {
+        nameByNumber[normalizedPhoneKey(phone.number)] = c.displayName;
       }
     }
 
-    final rawEntries = await widget.callsService.getCallLog();
-    final entries = rawEntries.map((e) {
+    final enriched = rawEntries.map((e) {
       if (e.contactName != null && e.contactName!.isNotEmpty) return e;
       final match = nameByNumber[normalizedPhoneKey(e.phoneNumber)];
-      if (match == null) return e;
-      return e.copyWith(contactName: match);
+      return match == null ? e : e.copyWith(contactName: match);
     }).toList();
 
     if (!mounted) return;
-    setState(() {
-      _permissionGranted = true;
-      _entries = entries;
-      _loading = false;
-    });
+    setState(() => _entries = enriched);
   }
+
+  // ── filtering + searching ─────────────────────────────────────────────────
+
+  List<CallEntry> get _visible {
+    var list = _entries;
+    switch (_filter) {
+      case _Filter.missed:
+        list = list.where((e) => e.type == CallType.missed).toList();
+      case _Filter.incoming:
+        list = list.where((e) => e.type == CallType.incoming).toList();
+      case _Filter.outgoing:
+        list = list.where((e) => e.type == CallType.outgoing).toList();
+      case _Filter.rejected:
+        list = list.where((e) =>
+            e.type == CallType.rejected || e.type == CallType.blocked).toList();
+      case _Filter.all:
+        break;
+    }
+    if (_searchQuery.isNotEmpty) {
+      list = list.where((e) {
+        final name = (e.contactName ?? '').toLowerCase();
+        final num  = e.phoneNumber.toLowerCase();
+        return name.contains(_searchQuery) || num.contains(_searchQuery);
+      }).toList();
+    }
+    return list;
+  }
+
+  // ── group by date ─────────────────────────────────────────────────────────
+
+  /// Returns a flat list of either a DateTime (section header) or a CallEntry.
+  List<Object> _grouped(List<CallEntry> entries) {
+    final result = <Object>[];
+    DateTime? lastDay;
+    for (final e in entries) {
+      final day = DateTime(
+        e.timestamp.toLocal().year,
+        e.timestamp.toLocal().month,
+        e.timestamp.toLocal().day,
+      );
+      if (lastDay == null || day != lastDay) {
+        result.add(day);
+        lastDay = day;
+      }
+      result.add(e);
+    }
+    return result;
+  }
+
+  // ── helpers ───────────────────────────────────────────────────────────────
 
   String _semanticType(CallType type) {
     switch (type) {
-      case CallType.incoming:
-        return 'incoming';
-      case CallType.outgoing:
-        return 'outgoing';
-      case CallType.missed:
-        return 'missed';
+      case CallType.incoming: return 'incoming';
+      case CallType.outgoing: return 'outgoing';
+      case CallType.missed:   return 'missed';
       case CallType.rejected:
       case CallType.blocked:
-        return 'blocked';
-      case CallType.unknown:
-        return 'blocked';
+      case CallType.unknown:  return 'blocked';
     }
   }
 
   IconData _iconFor(CallType type) {
     switch (type) {
-      case CallType.incoming:
-        return Icons.call_received;
-      case CallType.outgoing:
-        return Icons.call_made;
-      case CallType.missed:
-        return Icons.call_missed;
+      case CallType.incoming: return Icons.call_received;
+      case CallType.outgoing: return Icons.call_made;
+      case CallType.missed:   return Icons.call_missed;
       case CallType.rejected:
-      case CallType.blocked:
-        return Icons.block;
-      case CallType.unknown:
-        return Icons.call;
+      case CallType.blocked:  return Icons.block;
+      case CallType.unknown:  return Icons.call;
     }
   }
 
   String _formatDuration(Duration d) {
-    final minutes = d.inMinutes;
-    final seconds = d.inSeconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    final m = d.inMinutes.toString().padLeft(2, '0');
+    final s = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
   }
 
-  String _formatWhen(DateTime dt) {
-    final local = dt.toLocal();
+  String _formatTime(DateTime dt) {
+    final l = dt.toLocal();
+    return '${l.hour.toString().padLeft(2, '0')}:${l.minute.toString().padLeft(2, '0')}';
+  }
+
+  static const _monthNamesEl = [
+    '', 'Ιανουαρίου', 'Φεβρουαρίου', 'Μαρτίου', 'Απριλίου',
+    'Μαΐου', 'Ιουνίου', 'Ιουλίου', 'Αυγούστου',
+    'Σεπτεμβρίου', 'Οκτωβρίου', 'Νοεμβρίου', 'Δεκεμβρίου',
+  ];
+
+  static const _monthNamesEn = [
+    '', 'January', 'February', 'March', 'April',
+    'May', 'June', 'July', 'August',
+    'September', 'October', 'November', 'December',
+  ];
+
+  String _formatDayHeader(DateTime day) {
+    final s = widget.strings;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final thatDay = DateTime(local.year, local.month, local.day);
-    final time =
-        '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
-
-    if (thatDay == today) return '${widget.strings.today}, $time';
-    if (thatDay == today.subtract(const Duration(days: 1))) {
-      return '${widget.strings.yesterday}, $time';
-    }
-    return '${local.day}/${local.month}/${local.year}, $time';
+    if (day == today) return s.today;
+    if (day == today.subtract(const Duration(days: 1))) return s.yesterday;
+    final isGreek = s.lang == AppLanguage.greek;
+    final months = isGreek ? _monthNamesEl : _monthNamesEn;
+    return isGreek
+        ? '${day.day} ${months[day.month]} ${day.year}'
+        : '${months[day.month]} ${day.day}, ${day.year}';
   }
+
+  // ── build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    final s = widget.strings;
 
-    if (!_permissionGranted) {
-      return RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(
-            parent: BouncingScrollPhysics(),
-          ),
-          children: [
-            const SizedBox(height: 120),
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Text(
-                  widget.strings.callLogPermissionNeeded,
-                  textAlign: TextAlign.center,
-                ),
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (!_permissionGranted) return _centeredMessage(s.callLogPermissionNeeded);
+
+    final visible = _visible;
+    final grouped = _grouped(visible);
+
+    return Column(
+      children: [
+        // ── toolbar ──────────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 4, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: _searchVisible
+                    ? TextField(
+                        controller: _searchController,
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          hintText: s.searchCallLog,
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.close, size: 20),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _searchVisible = false);
+                            },
+                          ),
+                          isDense: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 8, horizontal: 16),
+                        ),
+                      )
+                    : SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _Chip(label: s.filterAll,
+                                selected: _filter == _Filter.all,
+                                onTap: () => setState(() => _filter = _Filter.all)),
+                            const SizedBox(width: 6),
+                            _Chip(label: s.filterMissed,
+                                selected: _filter == _Filter.missed,
+                                onTap: () => setState(() => _filter = _Filter.missed)),
+                            const SizedBox(width: 6),
+                            _Chip(label: s.filterIncoming,
+                                selected: _filter == _Filter.incoming,
+                                onTap: () => setState(() => _filter = _Filter.incoming)),
+                            const SizedBox(width: 6),
+                            _Chip(label: s.filterOutgoing,
+                                selected: _filter == _Filter.outgoing,
+                                onTap: () => setState(() => _filter = _Filter.outgoing)),
+                            const SizedBox(width: 6),
+                            _Chip(label: s.filterRejected,
+                                selected: _filter == _Filter.rejected,
+                                onTap: () => setState(() => _filter = _Filter.rejected)),
+                          ],
+                        ),
+                      ),
               ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_entries.isEmpty) {
-      return RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(
-            parent: BouncingScrollPhysics(),
+              if (!_searchVisible)
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  tooltip: s.searchCallLog,
+                  onPressed: () => setState(() => _searchVisible = true),
+                ),
+            ],
           ),
-          children: [
-            const SizedBox(height: 120),
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Text(
-                  widget.strings.callLogEmpty,
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          ],
         ),
-      );
-    }
 
-    return RefreshIndicator(
-      onRefresh: _load,
-      child: ListView.builder(
-        
-        
-        cacheExtent: 800,
-        physics: const AlwaysScrollableScrollPhysics(
-          parent: BouncingScrollPhysics(),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: _entries.length,
-        itemBuilder: (context, index) {
-          final e = _entries[index];
-          final semantic = _semanticType(e.type);
-          final color = AppTheme.callTypeColor(semantic);
-          final isMissed = e.type == CallType.missed;
+        // ── list ─────────────────────────────────────────────────────────
+        Expanded(
+          child: visible.isEmpty
+              ? _centeredMessage(
+                  _searchQuery.isNotEmpty || _filter != _Filter.all
+                      ? s.callLogNoResults
+                      : s.callLogEmpty,
+                )
+              : RefreshIndicator(
+                  onRefresh: _load,
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    cacheExtent: 800,
+                    physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics()),
+                    padding: const EdgeInsets.only(bottom: 16),
+                    itemCount: grouped.length,
+                    itemBuilder: (context, index) {
+                      final item = grouped[index];
 
-          
-          
-          
-          return RepaintBoundary(
-            child: Card(
-              child: ListTile(
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                leading: CircleAvatar(
-                  radius: 22,
-                  backgroundColor: color.withValues(alpha: 0.14),
-                  child: Icon(_iconFor(e.type), color: color, size: 22),
-                ),
-                title: Text(
-                  e.contactName ?? e.phoneNumber,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: isMissed ? AppColors.missed : null,
+                      // ── date header ────────────────────────────────────
+                      if (item is DateTime) {
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                          child: Text(
+                            _formatDayHeader(item),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        );
+                      }
+
+                      // ── call entry ─────────────────────────────────────
+                      final e = item as CallEntry;
+                      final semantic = _semanticType(e.type);
+                      final color = AppTheme.callTypeColor(semantic);
+                      final isMissed = e.type == CallType.missed;
+
+                      return RepaintBoundary(
+                        child: Card(
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 4),
+                            leading: CircleAvatar(
+                              radius: 22,
+                              backgroundColor: color.withValues(alpha: 0.14),
+                              child: Icon(_iconFor(e.type),
+                                  color: color, size: 22),
+                            ),
+                            title: Text(
+                              e.contactName ?? e.phoneNumber,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: isMissed ? AppColors.missed : null,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '${_formatTime(e.timestamp)} · '
+                              '${_formatDuration(e.duration)}',
+                            ),
+                            trailing: IconButton.filledTonal(
+                              icon: const Icon(Icons.call),
+                              onPressed: () =>
+                                  widget.callsService.placeCall(e.phoneNumber),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-                subtitle: Text(
-                  '${_formatWhen(e.timestamp)} · ${_formatDuration(e.duration)}',
-                ),
-                trailing: IconButton.filledTonal(
-                  icon: const Icon(Icons.call),
-                  onPressed: () =>
-                      widget.callsService.placeCall(e.phoneNumber),
-                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _centeredMessage(String msg) => RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics()),
+          children: [
+            const SizedBox(height: 120),
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(msg, textAlign: TextAlign.center),
               ),
             ),
-          );
-        },
+          ],
+        ),
+      );
+}
+
+// ── filter chip ───────────────────────────────────────────────────────────────
+
+class _Chip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _Chip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected
+              ? scheme.primary
+              : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: selected ? scheme.onPrimary : scheme.onSurfaceVariant,
+          ),
+        ),
       ),
     );
   }

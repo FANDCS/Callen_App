@@ -1,7 +1,7 @@
 name: app_calls
-description: "Εφαρμογή κλήσεων με sync (μέρος του multiplatform app suite από FANDCS)"
+description: "Free and open source app for making real and fake calls with sync..."
 publish_to: 'none'
-version: 0.1.3
+version: 0.1.4
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -47,6 +47,7 @@ dependencies:
   # προβλήματα (πχ. το firebase SDK δεν υποστηρίζεται καλά σε Linux desktop).
   http: ^1.2.2
   cryptography: ^2.7.0
+  quick_actions: ^1.0.7
 
 dev_dependencies:
   flutter_test:

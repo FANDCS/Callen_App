@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Callen
+GenericName=Calling App
+Comment=Calling app with sync for Android and Linux
+Exec=callen
+Icon=callen
+Terminal=false
+Categories=Network;Telephony;GTK;
+StartupWMClass=callen

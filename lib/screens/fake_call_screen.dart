@@ -6,8 +6,6 @@ import '../utils/app_strings.dart';
 
 const _ringtoneChannel = MethodChannel('gr.fandcs.callen/ringtone');
 
-
-
 const _ringTimeout = Duration(seconds: 30);
 
 class FakeCallScreen extends StatefulWidget {
@@ -55,8 +53,6 @@ class _FakeCallScreenState extends State<FakeCallScreen>
     super.initState();
     _startRinging();
     _ringTimeoutTimer = Timer(_ringTimeout, _missedCall);
-    
-    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) setState(() => _contentVisible = true);
     });
@@ -73,8 +69,6 @@ class _FakeCallScreenState extends State<FakeCallScreen>
   }
 
   void _startRinging() {
-    
-    
     _ringtoneChannel.invokeMethod('play');
     _vibrateLoop();
   }
@@ -86,8 +80,6 @@ class _FakeCallScreenState extends State<FakeCallScreen>
     }
   }
 
-  
-  
   void _missedCall() {
     if (_answered || _ended || !mounted) return;
     _decline();
@@ -96,17 +88,12 @@ class _FakeCallScreenState extends State<FakeCallScreen>
   void _decline() {
     _ringTimeoutTimer?.cancel();
     _ended = true;
-    
-    
     _ringtoneChannel.invokeMethod('release');
     if (mounted) Navigator.of(context).pop();
   }
 
   void _answer() {
     _ringTimeoutTimer?.cancel();
-    
-    
-    
     _ringtoneChannel.invokeMethod('muteRingtone');
     _pulseController.stop();
     setState(() {
@@ -134,9 +121,7 @@ class _FakeCallScreenState extends State<FakeCallScreen>
         backgroundColor: const Color(0xFF101513),
         body: Stack(
           children: [
-            
-            
-            
+            // ── animated background ──────────────────────────────────────
             Positioned.fill(
               child: AnimatedBuilder(
                 animation: _bgController,
@@ -158,109 +143,121 @@ class _FakeCallScreenState extends State<FakeCallScreen>
                 ),
               ),
             ),
+            // ── content ──────────────────────────────────────────────────
             SafeArea(
               child: AnimatedOpacity(
                 opacity: _contentVisible ? 1 : 0,
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOut,
                 child: Padding(
-                padding: const EdgeInsets.fromLTRB(32, 32, 32, 16),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 24),
-                    Text(
-                      _answered ? _formattedDuration : s.incomingCall,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16,
-                        shadows: [Shadow(blurRadius: 8, color: Colors.black54)],
-                      ),
-                    ),
-                    if (!_showKeypad) ...[
-                      const SizedBox(height: 36),
-                      _AvatarWithPulse(
-                        animation: _pulseController,
-                        ringing: !_answered,
-                      ),
-                      const SizedBox(height: 28),
+                  padding: const EdgeInsets.fromLTRB(32, 32, 32, 16),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 24),
+                      // status / timer
                       Text(
-                        widget.callerName,
+                        _answered ? _formattedDuration : s.incomingCall,
                         style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                          shadows: [Shadow(blurRadius: 10, color: Colors.black54)],
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        widget.callerNumber,
-                        style: const TextStyle(
-                          color: Colors.white54,
+                          color: Colors.white70,
                           fontSize: 16,
                           shadows: [Shadow(blurRadius: 8, color: Colors.black54)],
                         ),
                       ),
-                    ],
-                    const Spacer(),
-                    if (_answered) ...[
-                      if (_showKeypad) ...[
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: IconButton(
-                            icon: const Icon(Icons.keyboard_hide,
-                                color: Colors.white70),
-                            tooltip: s.hideKeypad,
-                            onPressed: () =>
-                                setState(() => _showKeypad = false),
+                      // avatar + name (hidden while keypad is open)
+                      if (!_showKeypad) ...[
+                        const SizedBox(height: 36),
+                        _AvatarWithPulse(
+                          animation: _pulseController,
+                          ringing: !_answered,
+                        ),
+                        const SizedBox(height: 28),
+                        Text(
+                          widget.callerName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            shadows: [Shadow(blurRadius: 10, color: Colors.black54)],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          widget.callerNumber,
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 16,
+                            shadows: [Shadow(blurRadius: 8, color: Colors.black54)],
                           ),
                         ),
-                        const _FakeKeypad(),
-                      ] else
-                        _InCallOptionsGrid(
-                          strings: s,
-                          muted: _muted,
-                          onHold: _onHold,
-                          speaker: _speaker,
-                          showKeypad: _showKeypad,
-                          onToggleMute: () => setState(() => _muted = !_muted),
-                          onToggleHold: () =>
-                              setState(() => _onHold = !_onHold),
-                          onToggleSpeaker: () =>
-                              setState(() => _speaker = !_speaker),
-                          onToggleKeypad: () =>
-                              setState(() => _showKeypad = true),
-                        ),
-                      const SizedBox(height: 24),
-                    ],
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
+                      ],
+                      const Spacer(),
+                      // ── in-call options (mute / speaker / hold / keypad) ──
+                      if (_answered) ...[
+                        if (_showKeypad) ...[
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: IconButton(
+                              icon: const Icon(Icons.keyboard_hide,
+                                  color: Colors.white70),
+                              tooltip: s.hideKeypad,
+                              onPressed: () =>
+                                  setState(() => _showKeypad = false),
+                            ),
+                          ),
+                          const _FakeKeypad(),
+                        ] else
+                          _InCallOptionsGrid(
+                            strings: s,
+                            muted: _muted,
+                            onHold: _onHold,
+                            speaker: _speaker,
+                            showKeypad: _showKeypad,
+                            onToggleMute: () => setState(() => _muted = !_muted),
+                            onToggleHold: () =>
+                                setState(() => _onHold = !_onHold),
+                            onToggleSpeaker: () =>
+                                setState(() => _speaker = !_speaker),
+                            onToggleKeypad: () =>
+                                setState(() => _showKeypad = true),
+                          ),
+                        const SizedBox(height: 24),
+                      ],
+                      // ── bottom action buttons ─────────────────────────────
+                      //
+                      // RINGING  : [Decline]   [Answer]   (spaceEvenly, two buttons)
+                      // ANSWERED : [End call]             (centered, one button)
+                      //
+                      if (_answered)
+                        // Single centered end-call button
                         _CallActionButton(
                           icon: Icons.call_end,
                           color: _FakeCallColors.decline,
-                          label: _answered ? s.endCall : s.decline,
+                          label: s.endCall,
                           onTap: _decline,
+                        )
+                      else
+                        // Two buttons side-by-side while ringing
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _CallActionButton(
+                              icon: Icons.call_end,
+                              color: _FakeCallColors.decline,
+                              label: s.decline,
+                              onTap: _decline,
+                            ),
+                            _CallActionButton(
+                              icon: Icons.call,
+                              color: _FakeCallColors.answer,
+                              label: s.answer,
+                              onTap: _answer,
+                            ),
+                          ],
                         ),
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 200),
-                          child: _answered
-                              ? const SizedBox(
-                                  width: 72, key: ValueKey('empty'))
-                              : _CallActionButton(
-                                  key: const ValueKey('answer'),
-                                  icon: Icons.call,
-                                  color: _FakeCallColors.answer,
-                                  label: s.answer,
-                                  onTap: _answer,
-                                ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -271,11 +268,12 @@ class _FakeCallScreenState extends State<FakeCallScreen>
   }
 }
 
-
-
+// ─────────────────────────────────────────────────────────────────────────────
+// Background painter
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _ShapesPainter extends CustomPainter {
-  final double t; 
+  final double t;
   _ShapesPainter(this.t);
 
   static const _colors = [
@@ -291,7 +289,8 @@ class _ShapesPainter extends CustomPainter {
       final phase = t * 2 * math.pi * 40 + (i * 1.5);
       final cx = size.width * 0.5 +
           size.width * 0.55 * math.cos(phase + i) * (i.isEven ? 1 : -1);
-      final cy = size.height * 0.4 + size.height * 0.45 * math.sin(phase * 0.8 + i);
+      final cy =
+          size.height * 0.4 + size.height * 0.45 * math.sin(phase * 0.8 + i);
       final radius = size.shortestSide * (0.42 + 0.12 * math.sin(phase));
 
       final paint = Paint()
@@ -300,7 +299,8 @@ class _ShapesPainter extends CustomPainter {
             _colors[i].withValues(alpha: 0.55),
             _colors[i].withValues(alpha: 0.0),
           ],
-        ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: radius));
+        ).createShader(
+            Rect.fromCircle(center: Offset(cx, cy), radius: radius));
       canvas.drawCircle(Offset(cx, cy), radius, paint);
     }
   }
@@ -309,6 +309,10 @@ class _ShapesPainter extends CustomPainter {
   bool shouldRepaint(covariant _ShapesPainter oldDelegate) =>
       oldDelegate.t != t;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Avatar with pulse ring (stops pulsing once answered)
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _AvatarWithPulse extends StatelessWidget {
   final Animation<double> animation;
@@ -371,6 +375,10 @@ class _AvatarWithPulse extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// In-call options grid (mute / speaker / hold / keypad)
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _InCallOptionsGrid extends StatelessWidget {
   final AppStrings strings;
@@ -490,6 +498,10 @@ class _OptionButton extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// DTMF keypad (shown during active call)
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _FakeKeypad extends StatefulWidget {
   const _FakeKeypad();
 
@@ -566,11 +578,19 @@ class _FakeKeypadState extends State<_FakeKeypad> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared colours
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _FakeCallColors {
   _FakeCallColors._();
   static const answer = Color(0xFF2E7D32);
   static const decline = Color(0xFFD64550);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Round action button (Decline / Answer / End call)
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _CallActionButton extends StatelessWidget {
   final IconData icon;

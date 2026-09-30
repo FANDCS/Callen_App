@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:quick_actions/quick_actions.dart';
 
 import 'services/calls_service.dart';
 import 'services/calls_service_android.dart';
@@ -26,9 +27,6 @@ const _fakeCallChannel = MethodChannel('gr.fandcs.callen/fakecall');
 final navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
-  
-  
-  
   WidgetsFlutterBinding.ensureInitialized();
   final store = await SettingsStore.load();
   final deviceId = await store.ensureSyncDeviceId();
@@ -42,25 +40,16 @@ void main() async {
 
 ThemeMode _themeModeFromString(String value) {
   switch (value) {
-    case 'light':
-      return ThemeMode.light;
-    case 'dark':
-      return ThemeMode.dark;
-    default:
-      return ThemeMode.system;
+    case 'light': return ThemeMode.light;
+    case 'dark':  return ThemeMode.dark;
+    default:      return ThemeMode.system;
   }
 }
 
-
-
-
-
 AppLanguage _resolveLanguage(String stored, Locale systemLocale) {
   switch (stored) {
-    case 'el':
-      return AppLanguage.greek;
-    case 'en':
-      return AppLanguage.english;
+    case 'el': return AppLanguage.greek;
+    case 'en': return AppLanguage.english;
     default:
       return systemLocale.languageCode == 'el'
           ? AppLanguage.greek
@@ -85,21 +74,26 @@ class AppCallsRoot extends StatefulWidget {
 
 class _AppCallsRootState extends State<AppCallsRoot> {
   late ThemeMode _themeMode = _themeModeFromString(widget.store.themeMode);
-  late String _languagePref = widget.store.language; 
+  late String _languagePref = widget.store.language;
+  final QuickActions _quickActions = const QuickActions();
+
+  // Guard: prevents the quick action from opening FakeCallSetupScreen twice.
+  // The initialize callback may fire once on startup AND once when the app is
+  // brought to the foreground via the shortcut; we only want one push.
+  bool _quickActionHandled = false;
 
   @override
   void initState() {
     super.initState();
-    
-    
+    _setupQuickActions();
+
     _fakeCallChannel.setMethodCallHandler((call) async {
       if (call.method == 'onFakeCallTriggered') {
         final args = Map<String, dynamic>.from(call.arguments as Map);
         _showFakeCallScreen(args['name'] as String, args['number'] as String);
       }
     });
-    
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final pending = await _fakeCallChannel.invokeMethod('consumePending');
       if (pending != null) {
@@ -108,13 +102,56 @@ class _AppCallsRootState extends State<AppCallsRoot> {
       }
     });
 
-    // Ήσυχο background sync στην εκκίνηση, χωρίς να μπλοκάρει το UI και
-    // χωρίς να δείχνει τίποτα αν αποτύχει (ο χρήστης βλέπει το αποτέλεσμα
-    // ρητά μόνο όταν πατήσει "Συγχρονισμός τώρα" στις ρυθμίσεις).
     if (widget.store.syncEnabled) {
       SyncService(store: widget.store, localStore: widget.localCallStore)
           .syncNow();
     }
+  }
+
+  void _setupQuickActions() {
+    _quickActions.initialize((String shortcutType) {
+      if (shortcutType != 'action_fake_call') return;
+      // Reset the guard every time the shortcut fires so repeated uses work,
+      // but use addPostFrameCallback to coalesce multiple rapid firings into one.
+      if (_quickActionHandled) return;
+      _quickActionHandled = true;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _quickActionHandled = false; // allow next invocation
+        final nav = navigatorKey.currentState;
+        if (nav == null) return;
+
+        // If FakeCallSetupScreen is already on top, don't push again.
+        bool alreadyOnTop = false;
+        nav.popUntil((route) {
+          if (route.settings.name == '/fake_call_setup') alreadyOnTop = true;
+          return true; // don't actually pop anything
+        });
+        if (alreadyOnTop) return;
+
+        final systemLocale = WidgetsBinding.instance.platformDispatcher.locale;
+        final strings = AppStrings(_resolveLanguage(_languagePref, systemLocale));
+        nav.push(
+          MaterialPageRoute(
+            settings: const RouteSettings(name: '/fake_call_setup'),
+            builder: (_) => FakeCallSetupScreen(strings: strings),
+          ),
+        );
+      });
+    });
+    _updateQuickActions(_languagePref);
+  }
+
+  void _updateQuickActions(String langPref) {
+    final systemLocale = WidgetsBinding.instance.platformDispatcher.locale;
+    final strings = AppStrings(_resolveLanguage(langPref, systemLocale));
+    _quickActions.setShortcutItems(<ShortcutItem>[
+      ShortcutItem(
+        type: 'action_fake_call',
+        localizedTitle: strings.menuFakeCall,
+        icon: 'ic_fake_call',
+      ),
+    ]);
   }
 
   void _showFakeCallScreen(String name, String number) {
@@ -142,6 +179,7 @@ class _AppCallsRootState extends State<AppCallsRoot> {
   void _setLanguagePref(String pref) {
     setState(() => _languagePref = pref);
     widget.store.setLanguage(pref);
+    _updateQuickActions(pref);
   }
 
   @override
@@ -150,9 +188,6 @@ class _AppCallsRootState extends State<AppCallsRoot> {
     final language = _resolveLanguage(_languagePref, systemLocale);
     final strings = AppStrings(language);
 
-    
-    
-    
     final CallsService callsService = Platform.isAndroid
         ? CallsServiceAndroid(
             deviceId: widget.deviceId,
@@ -160,8 +195,9 @@ class _AppCallsRootState extends State<AppCallsRoot> {
           )
         : CallsServiceStub(localStore: widget.localCallStore);
 
-    final ContactsService contactsService =
-        Platform.isAndroid ? ContactsServiceAndroid() : ContactsServiceStub();
+    final ContactsService contactsService = Platform.isAndroid
+        ? ContactsServiceAndroid()
+        : ContactsServiceStub();
 
     return MaterialApp(
       title: 'Κλήσεις',
@@ -169,10 +205,6 @@ class _AppCallsRootState extends State<AppCallsRoot> {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: _themeMode,
-      
-      
-      
-      
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -224,21 +256,15 @@ class HomeShell extends StatefulWidget {
 }
 
 class _HomeShellState extends State<HomeShell> {
-  
   int _index = 1;
   int _previousIndex = 1;
 
   void _onTabSelected(int newIndex) {
     if (newIndex == _index) return;
-    setState(() {
-      _previousIndex = _index;
-      _index = newIndex;
-    });
+    setState(() { _previousIndex = _index; _index = newIndex; });
   }
 
-  void _openSettings() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
+  void _openSettings() => Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => SettingsScreen(
           themeMode: widget.themeMode,
           onThemeModeChanged: widget.onThemeModeChanged,
@@ -249,23 +275,18 @@ class _HomeShellState extends State<HomeShell> {
           contactsService: widget.contactsService,
           localCallStore: widget.localCallStore,
         ),
-      ),
-    );
-  }
+      ));
 
-  void _openAbout() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => AboutScreen(strings: widget.strings)),
-    );
-  }
+  void _openAbout() => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => AboutScreen(strings: widget.strings)),
+      );
 
-  void _openFakeCall() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => FakeCallSetupScreen(strings: widget.strings),
-      ),
-    );
-  }
+  void _openFakeCall() => Navigator.of(context).push(
+        MaterialPageRoute(
+          settings: const RouteSettings(name: '/fake_call_setup'),
+          builder: (_) => FakeCallSetupScreen(strings: widget.strings),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -292,9 +313,6 @@ class _HomeShellState extends State<HomeShell> {
     ];
 
     final titles = [s.tabHistory, s.tabDialer, s.tabContacts];
-
-    
-    
     final movingForward = _index >= _previousIndex;
 
     return Scaffold(
@@ -309,30 +327,15 @@ class _HomeShellState extends State<HomeShell> {
               if (value == 'fake_call') _openFakeCall();
             },
             itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'fake_call',
-                child: ListTile(
-                  leading: const Icon(Icons.phone_callback_outlined),
-                  title: Text(s.menuFakeCall),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-              PopupMenuItem(
-                value: 'settings',
-                child: ListTile(
-                  leading: const Icon(Icons.settings_outlined),
-                  title: Text(s.menuSettings),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-              PopupMenuItem(
-                value: 'about',
-                child: ListTile(
-                  leading: const Icon(Icons.info_outline),
-                  title: Text(s.menuAbout),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
+              PopupMenuItem(value: 'fake_call',
+                child: ListTile(leading: const Icon(Icons.phone_callback_outlined),
+                    title: Text(s.menuFakeCall), contentPadding: EdgeInsets.zero)),
+              PopupMenuItem(value: 'settings',
+                child: ListTile(leading: const Icon(Icons.settings_outlined),
+                    title: Text(s.menuSettings), contentPadding: EdgeInsets.zero)),
+              PopupMenuItem(value: 'about',
+                child: ListTile(leading: const Icon(Icons.info_outline),
+                    title: Text(s.menuAbout), contentPadding: EdgeInsets.zero)),
             ],
           ),
         ],
@@ -342,39 +345,27 @@ class _HomeShellState extends State<HomeShell> {
         switchInCurve: Curves.easeOutCubic,
         switchOutCurve: Curves.easeInCubic,
         transitionBuilder: (child, animation) {
-          final offsetAnimation = Tween<Offset>(
+          final offset = Tween<Offset>(
             begin: Offset(movingForward ? 0.06 : -0.06, 0),
             end: Offset.zero,
           ).animate(animation);
           return FadeTransition(
             opacity: animation,
-            child: SlideTransition(position: offsetAnimation, child: child),
+            child: SlideTransition(position: offset, child: child),
           );
         },
-        child: KeyedSubtree(
-          key: ValueKey<int>(_index),
-          child: screens[_index],
-        ),
+        child: KeyedSubtree(key: ValueKey<int>(_index), child: screens[_index]),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: _onTabSelected,
         destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.history_outlined),
-            selectedIcon: const Icon(Icons.history),
-            label: s.tabHistory,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.dialpad_outlined),
-            selectedIcon: const Icon(Icons.dialpad),
-            label: s.tabDialer,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.contacts_outlined),
-            selectedIcon: const Icon(Icons.contacts),
-            label: s.tabContacts,
-          ),
+          NavigationDestination(icon: const Icon(Icons.history_outlined),
+              selectedIcon: const Icon(Icons.history), label: s.tabHistory),
+          NavigationDestination(icon: const Icon(Icons.dialpad_outlined),
+              selectedIcon: const Icon(Icons.dialpad), label: s.tabDialer),
+          NavigationDestination(icon: const Icon(Icons.contacts_outlined),
+              selectedIcon: const Icon(Icons.contacts), label: s.tabContacts),
         ],
       ),
     );
