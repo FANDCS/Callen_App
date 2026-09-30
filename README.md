@@ -24,6 +24,7 @@ Features:
 - Sync with **yours** choice server (Supabase, Pocketbase, Custom REST)
 - Local encryption before sync data to server
 - Multi-platform
+- Languages: 🇬🇧English, 🇬🇷Ελληνικά
 
 ### Screenshots
 <img alt="dialer" src="/fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" height="400">  <img alt="fake_call" src="/fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" height="400">  <img alt="fake_call" src="/fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" height="400">
