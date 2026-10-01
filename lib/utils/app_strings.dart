@@ -34,66 +34,49 @@ class AppStrings {
   String get settingsSaved =>
       _isGreek ? 'Οι ρυθμίσεις αποθηκεύτηκαν' : 'Settings saved';
   String get openSettings => _isGreek ? 'Άνοιγμα ρυθμίσεων' : 'Open settings';
+  String get cancel => _isGreek ? 'Ακύρωση' : 'Cancel';
+  String get delete => _isGreek ? 'Διαγραφή' : 'Delete';
+  String get call => _isGreek ? 'Κλήση' : 'Call';
 
   // ── Sync ──────────────────────────────────────────────────────────────────
-  String get syncBackendProvider =>
-      _isGreek ? 'Πάροχος backend' : 'Backend provider';
-  String get syncDeviceIdLabel => _isGreek
-      ? 'Όνομα/ID αυτής της εγκατάστασης'
-      : 'Name/ID of this install';
+  String get syncBackendProvider => _isGreek ? 'Πάροχος backend' : 'Backend provider';
+  String get syncDeviceIdLabel =>
+      _isGreek ? 'Όνομα/ID αυτής της εγκατάστασης' : 'Name/ID of this install';
   String get syncDeviceIdHint =>
       _isGreek ? 'π.χ. leftheris-phone' : 'e.g. leftheris-phone';
   String get syncDeviceIdHelper => _isGreek
-      ? 'Ξεχωρίζει τα δικά σου δεδομένα μέσα στο database, αν το '
-          'μοιράζεσαι με άλλες συσκευές/χρήστες.'
-      : 'Separates your data within the database, if you share it with '
-          'other devices/users.';
-  String get syncEncryptionPasswordLabel => _isGreek
-      ? 'Κωδικός τοπικής κρυπτογράφησης'
-      : 'Local encryption password';
+      ? 'Ξεχωρίζει τα δικά σου δεδομένα μέσα στο database, αν το μοιράζεσαι με άλλες συσκευές/χρήστες.'
+      : 'Separates your data within the database, if you share it with other devices/users.';
+  String get syncEncryptionPasswordLabel =>
+      _isGreek ? 'Κωδικός τοπικής κρυπτογράφησης' : 'Local encryption password';
   String get syncEncryptionPasswordHelper => _isGreek
-      ? 'Τα δεδομένα κρυπτογραφούνται στη συσκευή σου πριν ανέβουν — '
-          'χωρίς αυτόν τον κωδικό δεν αποκρυπτογραφούνται.'
-      : 'Your data is encrypted on your device before it\'s uploaded — '
-          'without this password it can\'t be decrypted.';
-  String get syncTestConnection =>
-      _isGreek ? 'Δοκιμή σύνδεσης' : 'Test connection';
+      ? 'Τα δεδομένα κρυπτογραφούνται στη συσκευή σου πριν ανέβουν — χωρίς αυτόν τον κωδικό δεν αποκρυπτογραφούνται.'
+      : 'Your data is encrypted on your device before it\'s uploaded — without this password it can\'t be decrypted.';
+  String get syncTestConnection => _isGreek ? 'Δοκιμή σύνδεσης' : 'Test connection';
   String get syncNow => _isGreek ? 'Συγχρονισμός τώρα' : 'Sync now';
-  String get syncConnectionOk =>
-      _isGreek ? 'Σύνδεση επιτυχής' : 'Connection successful';
+  String get syncConnectionOk => _isGreek ? 'Σύνδεση επιτυχής' : 'Connection successful';
   String get syncSuccessPrefix => _isGreek ? 'Συγχρονισμός:' : 'Sync:';
   String get syncFailedPrefix => _isGreek ? 'Σφάλμα:' : 'Error:';
-  String syncPushedCount(int n) =>
-      _isGreek ? 'Εστάλησαν $n' : '$n pushed';
-  String syncPulledCount(int n) =>
-      _isGreek ? 'Ελήφθησαν $n' : '$n pulled';
+  String syncPushedCount(int n) => _isGreek ? 'Εστάλησαν $n' : '$n pushed';
+  String syncPulledCount(int n) => _isGreek ? 'Ελήφθησαν $n' : '$n pulled';
 
   // ── Contacts ──────────────────────────────────────────────────────────────
   String get contactSourceTitle => _isGreek ? 'Πηγή επαφών' : 'Contact source';
-  String get contactSourceEmpty => _isGreek
-      ? 'Δεν βρέθηκαν πολλαπλές πηγές επαφών'
-      : 'No multiple contact sources found';
+  String get contactSourceEmpty =>
+      _isGreek ? 'Δεν βρέθηκαν πολλαπλές πηγές επαφών' : 'No multiple contact sources found';
   String get contactSourceEmptySubtitle => _isGreek
       ? 'Θα χρησιμοποιηθούν όλες οι επαφές της συσκευής.'
       : 'All contacts on this device will be used.';
   String get contactSourceInstructions => _isGreek
-      ? 'Επίλεξε μία ή περισσότερες πηγές. Αν δεν επιλέξεις καμία, '
-          'χρησιμοποιούνται όλες. Τα διπλότυπα (ίδιος αριθμός σε πάνω από '
-          'μία πηγή) αφαιρούνται αυτόματα.'
-      : 'Choose one or more sources. If you don\'t choose any, all of '
-          'them are used. Duplicates (the same number in more than one '
-          'source) are removed automatically.';
-  String get contactSourceDevice =>
-      _isGreek ? 'Επαφές συσκευής' : 'Device contacts';
+      ? 'Επίλεξε μία ή περισσότερες πηγές. Αν δεν επιλέξεις καμία, χρησιμοποιούνται όλες. Τα διπλότυπα (ίδιος αριθμός σε πάνω από μία πηγή) αφαιρούνται αυτόματα.'
+      : 'Choose one or more sources. If you don\'t choose any, all of them are used. Duplicates (the same number in more than one source) are removed automatically.';
+  String get contactSourceDevice => _isGreek ? 'Επαφές συσκευής' : 'Device contacts';
   String get contactSourceSim => _isGreek ? 'Επαφές SIM' : 'SIM contacts';
   String get unknownContactName => _isGreek ? 'Άγνωστο' : 'Unknown';
-  String get chooseNumberTitle =>
-      _isGreek ? 'Επίλεξε αριθμό' : 'Choose a number';
+  String get chooseNumberTitle => _isGreek ? 'Επίλεξε αριθμό' : 'Choose a number';
   String get openExternalContactUnsupported => _isGreek
       ? 'Το άνοιγμα εξωτερικής επαφής δεν υποστηρίζεται σε αυτή την πλατφόρμα.'
       : 'Opening an external contact is not supported on this platform.';
-
-  // Phone label strings
   String get phoneLabelMobile => _isGreek ? 'Κινητό' : 'Mobile';
   String get phoneLabelHome => _isGreek ? 'Σπίτι' : 'Home';
   String get phoneLabelWork => _isGreek ? 'Εργασία' : 'Work';
@@ -102,31 +85,38 @@ class AppStrings {
   String get phoneLabelOther => _isGreek ? 'Άλλο' : 'Other';
 
   // ── Call log ──────────────────────────────────────────────────────────────
-  String get callLogEmpty =>
-      _isGreek ? 'Δεν έχεις καμία κλήση.' : 'You have no calls.';
+  String get callLogEmpty => _isGreek ? 'Δεν έχεις καμία κλήση.' : 'You have no calls.';
   String get callLogPermissionNeeded => _isGreek
       ? 'Χρειάζεται άδεια πρόσβασης στο ιστορικό κλήσεων.'
       : 'Call log access permission is required.';
   String get today => _isGreek ? 'Σήμερα' : 'Today';
   String get yesterday => _isGreek ? 'Χθες' : 'Yesterday';
+  String get searchCallLog => _isGreek ? 'Αναζήτηση κλήσεων...' : 'Search calls...';
+  String get filterAll => _isGreek ? 'Όλες' : 'All';
+  String get filterMissed => _isGreek ? 'Αναπάντητες' : 'Missed';
+  String get filterIncoming => _isGreek ? 'Εισερχόμενες' : 'Incoming';
+  String get filterOutgoing => _isGreek ? 'Εξερχόμενες' : 'Outgoing';
+  String get filterRejected => _isGreek ? 'Απορριφθείσες' : 'Rejected';
+  String get callLogNoResults => _isGreek ? 'Δεν βρέθηκαν κλήσεις.' : 'No calls found.';
+  String get deleteCallTitle => _isGreek ? 'Διαγραφή κλήσης' : 'Delete call';
+  String deleteCallConfirm(String name) => _isGreek
+      ? 'Να διαγραφεί η κλήση από/προς "$name";'
+      : 'Delete the call from/to "$name"?';
+  String get callDeleted => _isGreek ? 'Η κλήση διαγράφηκε.' : 'Call deleted.';
 
-  String get searchContactsHint =>
-      _isGreek ? 'Αναζήτηση επαφών...' : 'Search contacts...';
-  String get contactsEmpty =>
-      _isGreek ? 'Δεν έχεις καμία επαφή.' : 'You have no contacts.';
+  // ── Contacts screen ───────────────────────────────────────────────────────
+  String get searchContactsHint => _isGreek ? 'Αναζήτηση επαφών...' : 'Search contacts...';
+  String get contactsEmpty => _isGreek ? 'Δεν έχεις καμία επαφή.' : 'You have no contacts.';
   String get contactsPermissionNeeded => _isGreek
       ? 'Χρειάζεται άδεια πρόσβασης στις επαφές.'
       : 'Contacts access permission is required.';
   String get contactsNoMatch => _isGreek
       ? 'Καμία επαφή δεν ταιριάζει με την αναζήτηση.'
       : 'No contact matches your search.';
-  String get numberCopied =>
-      _isGreek ? 'Ο αριθμός αντιγράφηκε' : 'Number copied';
+  String get numberCopied => _isGreek ? 'Ο αριθμός αντιγράφηκε' : 'Number copied';
 
   // ── Dialer ────────────────────────────────────────────────────────────────
-  String get dialerHint =>
-      _isGreek ? 'Πληκτρολόγησε αριθμό' : 'Enter a number';
-
+  String get dialerHint => _isGreek ? 'Πληκτρολόγησε αριθμό' : 'Enter a number';
   Map<String, String> get keypadLetters => _isGreek
       ? const {
           '1': '', '2': 'ΑΒΓ', '3': 'ΔΕΖ',
@@ -154,10 +144,8 @@ class AppStrings {
   String get orgAndContributors =>
       _isGreek ? 'Οργανισμός & Συντελεστές' : 'Organization & Contributors';
   String get orgSubtitle => _isGreek ? 'FANDCS · Ομάδα' : 'FANDCS · Team';
-  String get builtWithFlutter =>
-      _isGreek ? 'Χτισμένο με Flutter' : 'Built with Flutter';
-  String get licenses =>
-      _isGreek ? 'Άδειες χρήσης βιβλιοθηκών' : 'Open source licenses';
+  String get builtWithFlutter => _isGreek ? 'Χτισμένο με Flutter' : 'Built with Flutter';
+  String get licenses => _isGreek ? 'Άδειες χρήσης βιβλιοθηκών' : 'Open source licenses';
   String get privacyPolicy =>
       _isGreek ? 'Πολιτική Απορρήτου & Όροι Χρήσης' : 'Privacy Policy & Terms of Use';
   String get contact => _isGreek ? 'Επικοινωνία' : 'Contact';
@@ -166,21 +154,9 @@ class AppStrings {
       : 'No email app found on this device.';
   String couldNotOpen(String url) =>
       _isGreek ? 'Δεν ήταν δυνατό το άνοιγμα: $url' : 'Could not open: $url';
-
-  // Updated FANDCS description
   String get orgDescription => _isGreek
-      ? 'Η FANDCS είναι μια ανεξάρτητη, ανοιχτού κώδικα ομάδα ανάπτυξης που '
-          'δημιουργεί ψηφιακές εμπειρίες από το 2022. Φτιάχνουμε 100% δωρεάν '
-          'εφαρμογές και ιστοσελίδες με αυστηρά privacy-first φιλοσοφία: χωρίς '
-          'συλλογή δεδομένων, χωρίς trackers και χωρίς διαφημίσεις. Η αποστολή '
-          'μας είναι να κρατάμε τον ψηφιακό κόσμο ανοιχτό, διαφανή και '
-          'προσβάσιμο σε όλους.'
-      : 'FANDCS is an independent, open-source development team crafting digital '
-          'experiences since 2022. We build 100% free apps and websites with a '
-          'strict privacy-first approach: no data collection, no trackers, and no '
-          'advertisements. Our mission is to keep the digital world open, '
-          'transparent, and accessible to everyone.';
-
+      ? 'Η FANDCS είναι μια ανεξάρτητη, ανοιχτού κώδικα ομάδα ανάπτυξης που δημιουργεί ψηφιακές εμπειρίες από το 2022. Φτιάχνουμε 100% δωρεάν εφαρμογές και ιστοσελίδες με αυστηρά privacy-first φιλοσοφία: χωρίς συλλογή δεδομένων, χωρίς trackers και χωρίς διαφημίσεις. Η αποστολή μας είναι να κρατάμε τον ψηφιακό κόσμο ανοιχτό, διαφανή και προσβάσιμο σε όλους.'
+      : 'FANDCS is an independent, open-source development team crafting digital experiences since 2022. We build 100% free apps and websites with a strict privacy-first approach: no data collection, no trackers, and no advertisements. Our mission is to keep the digital world open, transparent, and accessible to everyone.';
   String get githubLinkSoon =>
       _isGreek ? 'Σύνδεσμος GitHub: θα προστεθεί σύντομα.' : 'GitHub link: coming soon.';
   String get contributors => _isGreek ? 'Συντελεστές' : 'Contributors';
@@ -211,47 +187,51 @@ class AppStrings {
   String scheduledSnackbar(int n) => _isGreek
       ? 'Η ψεύτικη κλήση θα "χτυπήσει" σε $n δευτερόλεπτα. Μπορείς να κλείσεις την εφαρμογή.'
       : 'The fake call will "ring" in $n seconds. You can close the app.';
-
-  // Mode selector
-  String get fakeCallMode =>
-      _isGreek ? 'Τύπος οθόνης κλήσης' : 'Call screen type';
+  String get fakeCallMode => _isGreek ? 'Τύπος οθόνης κλήσης' : 'Call screen type';
   String get fakeCallModeApp => _isGreek ? 'Οθόνη Callen' : 'Callen screen';
-  String get fakeCallModeAppSubtitle => _isGreek
-      ? 'Η δική μας οθόνη κλήσης μέσα στην εφαρμογή.'
-      : 'Our own in-app call screen.';
+  String get fakeCallModeAppSubtitle =>
+      _isGreek ? 'Η δική μας οθόνη κλήσης μέσα στην εφαρμογή.' : 'Our own in-app call screen.';
   String get fakeCallModeSystem => _isGreek ? 'UI συσκευής' : 'Device UI';
   String get fakeCallModeSystemSubtitle => _isGreek
       ? 'Χρησιμοποιεί το προεπιλεγμένο UI κλήσης της συσκευής σου (Samsung, Xiaomi κ.λπ.).'
       : 'Uses your device\'s default call UI (Samsung, Xiaomi, etc.).';
-
-  // System call account
   String get callAccountNotEnabled => _isGreek
       ? 'Ο λογαριασμός "Callen" δεν είναι ενεργός. Άνοιξε τις ρυθμίσεις για να τον ενεργοποιήσεις.'
       : 'The "Callen" calling account is not enabled. Open settings to activate it.';
   String get callAccountSettingsOpened => _isGreek
       ? 'Άνοιξαν οι ρυθμίσεις λογαριασμών κλήσης — ενεργοποίησε το "Callen".'
       : 'Call account settings opened — enable "Callen" there.';
-
-  // Close-app hint
   String get fakeCallCloseAppHint => _isGreek
       ? 'Μπορείς να κλείσεις ή να βγεις από την εφαρμογή αφού πατήσεις «Προγραμματισμός». Η κλήση θα χτυπήσει κανονικά.'
       : 'You can close or leave the app after tapping Schedule. The call will still ring.';
-
-  // In-call labels
   String get keypadLabel => _isGreek ? 'Πλήκτρα' : 'Keypad';
   String get muteLabel => _isGreek ? 'Σίγαση' : 'Mute';
   String get speakerLabel => _isGreek ? 'Ηχείο' : 'Speaker';
   String get holdLabel => _isGreek ? 'Αναμονή' : 'Hold';
   String get hideKeypad => _isGreek ? 'Απόκρυψη πληκτρολογίου' : 'Hide keypad';
 
-  // ── Call log extras ────────────────────────────────────────────────────────
-  String get searchCallLog => _isGreek ? 'Αναζήτηση κλήσεων...' : 'Search calls...';
-  String get filterAll => _isGreek ? 'Όλες' : 'All';
-  String get filterMissed => _isGreek ? 'Αναπάντητες' : 'Missed';
-  String get callLogNoResults => _isGreek
-      ? 'Δεν βρέθηκαν κλήσεις.'
-      : 'No calls found.';
-  String get filterIncoming => _isGreek ? 'Εισερχόμενες' : 'Incoming';
-  String get filterOutgoing => _isGreek ? 'Εξερχόμενες' : 'Outgoing';
-  String get filterRejected => _isGreek ? 'Απορριφθείσες' : 'Rejected';
+  // ── Settings – calls section ───────────────────────────────────────────────
+  String get settingsCalls => _isGreek ? 'Κλήσεις' : 'Calls';
+  String get confirmIntlCalls =>
+      _isGreek ? 'Επιβεβαίωση διεθνών κλήσεων' : 'Confirm international calls';
+  String get confirmIntlCallsSubtitle => _isGreek
+      ? 'Ρωτά πριν από κάθε κλήση σε αριθμό άλλης χώρας.'
+      : 'Asks before dialling a number from another country.';
+  String get confirmIntlCallTitle =>
+      _isGreek ? 'Διεθνής κλήση' : 'International call';
+  String confirmIntlCallBody(String number) => _isGreek
+      ? 'Πρόκειται να καλέσεις τον αριθμό $number που φαίνεται να είναι διεθνής. Συνέχεια;'
+      : 'You\'re about to call $number which appears to be an international number. Continue?';
+  String get deleteCallSetting =>
+      _isGreek ? 'Διαγραφή κλήσεων' : 'Call deletion';
+  String get deleteFromAndroidLog =>
+      _isGreek ? 'Διαγραφή από το Android call log' : 'Delete from Android call log';
+  String get deleteFromAndroidLogSubtitle => _isGreek
+      ? 'Διαγράφει την κλήση και από το αρχείο του Android (προεπιλογή).'
+      : 'Removes the call from the Android system log too (default).';
+  String get deleteFromAppOnly =>
+      _isGreek ? 'Διαγραφή μόνο από την εφαρμογή' : 'Delete from app only';
+  String get deleteFromAppOnlySubtitle => _isGreek
+      ? 'Κρύβει την κλήση μόνο μέσα στο Callen. Το Android call log παραμένει αναλλοίωτο.'
+      : 'Hides the call only inside Callen. The Android call log stays unchanged.';
 }

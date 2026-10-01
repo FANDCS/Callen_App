@@ -45,6 +45,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _loadingSources = true;
   bool _syncing = false;
 
+  // ── new settings ──────────────────────────────────────────────────────────
+  late bool _confirmIntlCalls;
+  late bool _deleteFromAndroid;
+
   @override
   void initState() {
     super.initState();
@@ -58,6 +62,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ? 'supabase'
         : widget.store.syncBackend;
     _selectedSources = widget.store.contactSources.toSet();
+    _confirmIntlCalls = widget.store.confirmIntlCalls;
+    _deleteFromAndroid = widget.store.deleteFromAndroid;
     _loadSources();
     _fillDefaultDeviceId();
   }
@@ -86,23 +92,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _toggleSource(String id, bool selected) {
     setState(() {
-      if (selected) {
-        _selectedSources.add(id);
-      } else {
-        _selectedSources.remove(id);
-      }
+      if (selected) _selectedSources.add(id);
+      else _selectedSources.remove(id);
     });
     widget.store.setContactSources(_selectedSources.toList());
   }
 
   String _sourceLabel(ContactSource source) {
     switch (source.id) {
-      case deviceSourceId:
-        return widget.strings.contactSourceDevice;
-      case simSourceId:
-        return widget.strings.contactSourceSim;
-      default:
-        return source.displayName;
+      case deviceSourceId: return widget.strings.contactSourceDevice;
+      case simSourceId:    return widget.strings.contactSourceSim;
+      default:             return source.displayName;
     }
   }
 
@@ -119,10 +119,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await widget.store.setSyncServerUrl(_urlController.text.trim());
     await widget.store.setSyncApiKey(_apiKeyController.text.trim());
     await widget.store.setSyncDeviceId(_deviceIdController.text.trim());
-    await widget.store
-        .setSyncEncryptionPassword(_encryptionPasswordController.text);
+    await widget.store.setSyncEncryptionPassword(_encryptionPasswordController.text);
     await widget.store.setSyncBackend(_syncBackend);
     await widget.store.setSyncEnabled(_syncEnabled);
+    await widget.store.setConfirmIntlCalls(_confirmIntlCalls);
+    await widget.store.setDeleteFromAndroid(_deleteFromAndroid);
     if (!mounted) return;
     setState(() => _saved = true);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -131,14 +132,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _syncNow() async {
-    // Σιγουρευόμαστε ότι ό,τι βλέπει ο χρήστης στα πεδία είναι ήδη
-    // αποθηκευμένο πριν προσπαθήσουμε να συνδεθούμε με αυτό.
     await _save();
     setState(() => _syncing = true);
-    final service = SyncService(
-      store: widget.store,
-      localStore: widget.localCallStore,
-    );
+    final service = SyncService(store: widget.store, localStore: widget.localCallStore);
     final result = await service.syncNow();
     if (!mounted) return;
     setState(() => _syncing = false);
@@ -153,12 +149,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _testConnection() async {
     setState(() => _syncing = true);
     try {
-      final backend = SyncService(
-        store: widget.store,
-        localStore: widget.localCallStore,
-      );
-      // Χτίζουμε προσωρινά το backend με ό,τι είναι γραμμένο ΤΩΡΑ στα
-      // πεδία (χωρίς να χρειάζεται πρώτα Save).
+      final backend = SyncService(store: widget.store, localStore: widget.localCallStore);
       await widget.store.setSyncServerUrl(_urlController.text.trim());
       await widget.store.setSyncApiKey(_apiKeyController.text.trim());
       await widget.store.setSyncBackend(_syncBackend);
@@ -184,91 +175,120 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String _serverUrlLabel() {
     switch (_syncBackend) {
-      case 'pocketbase':
-        return 'PocketBase URL';
-      case 'custom':
-        return 'Server URL (δικός σου)';
-      default:
-        return 'Supabase URL';
+      case 'pocketbase': return 'PocketBase URL';
+      case 'custom':     return 'Server URL (δικός σου)';
+      default:           return 'Supabase URL';
     }
   }
 
   String _apiKeyLabel() {
     switch (_syncBackend) {
-      case 'pocketbase':
-        return 'PocketBase Admin/Auth Token';
-      case 'custom':
-        return 'Authorization header (π.χ. Bearer xyz)';
-      default:
-        return 'Supabase Anon Key';
+      case 'pocketbase': return 'PocketBase Admin/Auth Token';
+      case 'custom':     return 'Authorization header (π.χ. Bearer xyz)';
+      default:           return 'Supabase Anon Key';
     }
   }
 
+  // ── section header ────────────────────────────────────────────────────────
+  Widget _sectionHeader(String text) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+        child: Text(text,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+      );
+
   @override
   Widget build(BuildContext context) {
+    final s = widget.strings;
     return Scaffold(
-      appBar: AppBar(title: Text(widget.strings.settingsTitle)),
+      appBar: AppBar(title: Text(s.settingsTitle)),
       body: ListView(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-            child: Text(
-              widget.strings.settingsAppearance,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-            ),
-          ),
+          // ── Appearance ───────────────────────────────────────────────────
+          _sectionHeader(s.settingsAppearance),
           RadioListTile<ThemeMode>(
-            title: Text(widget.strings.langSystem),
+            title: Text(s.langSystem),
             value: ThemeMode.system,
             groupValue: widget.themeMode,
             onChanged: (m) => m != null ? widget.onThemeModeChanged(m) : null,
           ),
           RadioListTile<ThemeMode>(
-            title: Text(widget.strings.themeLight),
+            title: Text(s.themeLight),
             value: ThemeMode.light,
             groupValue: widget.themeMode,
             onChanged: (m) => m != null ? widget.onThemeModeChanged(m) : null,
           ),
           RadioListTile<ThemeMode>(
-            title: Text(widget.strings.themeDark),
+            title: Text(s.themeDark),
             value: ThemeMode.dark,
             groupValue: widget.themeMode,
             onChanged: (m) => m != null ? widget.onThemeModeChanged(m) : null,
           ),
+
           const Divider(height: 32),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(
-              widget.strings.settingsLanguage,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-            ),
-          ),
+
+          // ── Language ─────────────────────────────────────────────────────
+          _sectionHeader(s.settingsLanguage),
           RadioListTile<String>(
-            title: Text(widget.strings.langSystem),
+            title: Text(s.langSystem),
             value: 'system',
             groupValue: widget.languagePref,
             onChanged: (v) => v != null ? widget.onLanguageChanged(v) : null,
           ),
           RadioListTile<String>(
-            title: Text(widget.strings.langGreek),
+            title: Text(s.langGreek),
             value: 'el',
             groupValue: widget.languagePref,
             onChanged: (v) => v != null ? widget.onLanguageChanged(v) : null,
           ),
           RadioListTile<String>(
-            title: Text(widget.strings.langEnglish),
+            title: Text(s.langEnglish),
             value: 'en',
             groupValue: widget.languagePref,
             onChanged: (v) => v != null ? widget.onLanguageChanged(v) : null,
           ),
+
           const Divider(height: 32),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(
-              widget.strings.contactSourceTitle,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-            ),
+
+          // ── Calls ─────────────────────────────────────────────────────────
+          _sectionHeader(s.settingsCalls),
+          SwitchListTile(
+            title: Text(s.confirmIntlCalls),
+            subtitle: Text(s.confirmIntlCallsSubtitle),
+            value: _confirmIntlCalls,
+            onChanged: (v) async {
+              setState(() => _confirmIntlCalls = v);
+              await widget.store.setConfirmIntlCalls(v);
+            },
           ),
+          const Divider(indent: 16, endIndent: 16),
+          _sectionHeader(s.deleteCallSetting),
+          RadioListTile<bool>(
+            title: Text(s.deleteFromAndroidLog),
+            subtitle: Text(s.deleteFromAndroidLogSubtitle),
+            value: true,
+            groupValue: _deleteFromAndroid,
+            onChanged: (v) async {
+              if (v == null) return;
+              setState(() => _deleteFromAndroid = v);
+              await widget.store.setDeleteFromAndroid(v);
+            },
+          ),
+          RadioListTile<bool>(
+            title: Text(s.deleteFromAppOnly),
+            subtitle: Text(s.deleteFromAppOnlySubtitle),
+            value: false,
+            groupValue: _deleteFromAndroid,
+            onChanged: (v) async {
+              if (v == null) return;
+              setState(() => _deleteFromAndroid = v);
+              await widget.store.setDeleteFromAndroid(v);
+            },
+          ),
+
+          const Divider(height: 32),
+
+          // ── Contact sources ───────────────────────────────────────────────
+          _sectionHeader(s.contactSourceTitle),
           if (_loadingSources)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
@@ -277,16 +297,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           else if (_availableSources.isEmpty)
             ListTile(
               leading: const Icon(Icons.info_outline),
-              title: Text(widget.strings.contactSourceEmpty),
-              subtitle: Text(widget.strings.contactSourceEmptySubtitle),
+              title: Text(s.contactSourceEmpty),
+              subtitle: Text(s.contactSourceEmptySubtitle),
             )
           else ...[
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                widget.strings.contactSourceInstructions,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
+              child: Text(s.contactSourceInstructions,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
             ),
             ..._availableSources.map((source) => CheckboxListTile(
                   title: Text(_sourceLabel(source)),
@@ -296,39 +314,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
 
           const Divider(height: 32),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(
-              widget.strings.settingsSync,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-            ),
-          ),
+
+          // ── Sync ──────────────────────────────────────────────────────────
+          _sectionHeader(s.settingsSync),
           SwitchListTile(
-            title: Text(widget.strings.syncEnable),
-            subtitle: Text(widget.strings.syncEnableSubtitle),
+            title: Text(s.syncEnable),
+            subtitle: Text(s.syncEnableSubtitle),
             value: _syncEnabled,
-            onChanged: (v) => setState(() {
-              _syncEnabled = v;
-              _saved = false;
-            }),
+            onChanged: (v) => setState(() { _syncEnabled = v; _saved = false; }),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: DropdownButtonFormField<String>(
               initialValue: _syncBackend,
               decoration: InputDecoration(
-                labelText: widget.strings.syncBackendProvider,
+                labelText: s.syncBackendProvider,
                 border: const OutlineInputBorder(),
               ),
               items: const [
                 DropdownMenuItem(value: 'supabase', child: Text('Supabase')),
                 DropdownMenuItem(value: 'pocketbase', child: Text('PocketBase')),
-                DropdownMenuItem(value: 'custom', child: Text('Custom REST (δικός σου server)')),
+                DropdownMenuItem(
+                    value: 'custom',
+                    child: Text('Custom REST (δικός σου server)')),
               ],
-              onChanged: (v) => setState(() {
-                _syncBackend = v ?? 'supabase';
-                _saved = false;
-              }),
+              onChanged: (v) => setState(() { _syncBackend = v ?? 'supabase'; _saved = false; }),
             ),
           ),
           const SizedBox(height: 12),
@@ -338,9 +348,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               controller: _urlController,
               onChanged: (_) => setState(() => _saved = false),
               decoration: InputDecoration(
-                labelText: _serverUrlLabel(),
-                border: const OutlineInputBorder(),
-              ),
+                  labelText: _serverUrlLabel(), border: const OutlineInputBorder()),
               keyboardType: TextInputType.url,
             ),
           ),
@@ -352,9 +360,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onChanged: (_) => setState(() => _saved = false),
               obscureText: true,
               decoration: InputDecoration(
-                labelText: _apiKeyLabel(),
-                border: const OutlineInputBorder(),
-              ),
+                  labelText: _apiKeyLabel(), border: const OutlineInputBorder()),
             ),
           ),
           const SizedBox(height: 12),
@@ -364,9 +370,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               controller: _deviceIdController,
               onChanged: (_) => setState(() => _saved = false),
               decoration: InputDecoration(
-                labelText: widget.strings.syncDeviceIdLabel,
-                hintText: widget.strings.syncDeviceIdHint,
-                helperText: widget.strings.syncDeviceIdHelper,
+                labelText: s.syncDeviceIdLabel,
+                hintText: s.syncDeviceIdHint,
+                helperText: s.syncDeviceIdHelper,
                 border: const OutlineInputBorder(),
               ),
             ),
@@ -379,8 +385,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onChanged: (_) => setState(() => _saved = false),
               obscureText: true,
               decoration: InputDecoration(
-                labelText: widget.strings.syncEncryptionPasswordLabel,
-                helperText: widget.strings.syncEncryptionPasswordHelper,
+                labelText: s.syncEncryptionPasswordLabel,
+                helperText: s.syncEncryptionPasswordHelper,
                 border: const OutlineInputBorder(),
               ),
             ),
@@ -394,7 +400,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: FilledButton.icon(
                     onPressed: _syncing ? null : _save,
                     icon: Icon(_saved ? Icons.check : Icons.save_outlined),
-                    label: Text(_saved ? widget.strings.saved : widget.strings.save),
+                    label: Text(_saved ? s.saved : s.save),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -402,7 +408,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: OutlinedButton.icon(
                     onPressed: _syncing ? null : _testConnection,
                     icon: const Icon(Icons.wifi_tethering),
-                    label: Text(widget.strings.syncTestConnection),
+                    label: Text(s.syncTestConnection),
                   ),
                 ),
               ],
@@ -415,12 +421,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: (!_syncEnabled || _syncing) ? null : _syncNow,
               icon: _syncing
                   ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
+                      width: 16, height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.sync),
-              label: Text(widget.strings.syncNow),
+              label: Text(s.syncNow),
             ),
           ),
           const SizedBox(height: 32),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:call_log/call_log.dart' as native;
 import '../models/call_entry.dart';
 import '../services/calls_service.dart';
 import '../services/contacts_service.dart';
@@ -62,7 +63,6 @@ class _CallLogScreenState extends State<CallLogScreen> {
       return;
     }
 
-    // Show raw entries immediately (fast)
     final rawEntries = await widget.callsService.getCallLog();
     if (!mounted) return;
     setState(() { _entries = rawEntries; _loading = false; });
@@ -91,7 +91,90 @@ class _CallLogScreenState extends State<CallLogScreen> {
     setState(() => _entries = enriched);
   }
 
-  // ── filtering + searching ─────────────────────────────────────────────────
+  // ── delete ────────────────────────────────────────────────────────────────
+
+  Future<void> _deleteEntry(CallEntry e) async {
+    final s = widget.strings;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(s.deleteCallTitle),
+        content: Text(s.deleteCallConfirm(e.contactName ?? e.phoneNumber)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(s.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: Text(s.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final deleteFromAndroid = widget.store.deleteFromAndroid;
+
+    if (deleteFromAndroid) {
+      // Delete from Android call log by timestamp + number
+      try {
+        final entries = await native.CallLog.get(
+          dateFrom: e.timestamp.millisecondsSinceEpoch - 1000,
+          dateTo: e.timestamp.millisecondsSinceEpoch + 1000,
+        );
+        for (final ne in entries) {
+          if (ne.number == e.phoneNumber) {
+            await native.CallLog.delete(ne.timestamp!);
+            break;
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Always remove from local store
+    await widget.callsService.deleteEntry(e.id);
+    if (!mounted) return;
+    setState(() => _entries.removeWhere((x) => x.id == e.id));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(s.callDeleted)),
+    );
+  }
+
+  // ── confirm international call ────────────────────────────────────────────
+
+  Future<void> _placeCallWithCheck(String number) async {
+    if (widget.store.confirmIntlCalls && _isInternational(number)) {
+      final s = widget.strings;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(s.confirmIntlCallTitle),
+          content: Text(s.confirmIntlCallBody(number)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(s.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(s.call),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+    await widget.callsService.placeCall(number);
+  }
+
+  bool _isInternational(String number) {
+    final digits = number.replaceAll(RegExp(r'[^\d+]'), '');
+    return digits.startsWith('+') && !digits.startsWith('+30');
+  }
+
+  // ── filtering ─────────────────────────────────────────────────────────────
 
   List<CallEntry> get _visible {
     var list = _entries;
@@ -120,16 +203,12 @@ class _CallLogScreenState extends State<CallLogScreen> {
 
   // ── group by date ─────────────────────────────────────────────────────────
 
-  /// Returns a flat list of either a DateTime (section header) or a CallEntry.
   List<Object> _grouped(List<CallEntry> entries) {
     final result = <Object>[];
     DateTime? lastDay;
     for (final e in entries) {
-      final day = DateTime(
-        e.timestamp.toLocal().year,
-        e.timestamp.toLocal().month,
-        e.timestamp.toLocal().day,
-      );
+      final local = e.timestamp.toLocal();
+      final day = DateTime(local.year, local.month, local.day);
       if (lastDay == null || day != lastDay) {
         result.add(day);
         lastDay = day;
@@ -179,7 +258,6 @@ class _CallLogScreenState extends State<CallLogScreen> {
     'Μαΐου', 'Ιουνίου', 'Ιουλίου', 'Αυγούστου',
     'Σεπτεμβρίου', 'Οκτωβρίου', 'Νοεμβρίου', 'Δεκεμβρίου',
   ];
-
   static const _monthNamesEn = [
     '', 'January', 'February', 'March', 'April',
     'May', 'June', 'July', 'August',
@@ -188,12 +266,12 @@ class _CallLogScreenState extends State<CallLogScreen> {
 
   String _formatDayHeader(DateTime day) {
     final s = widget.strings;
-    final now = DateTime.now();
+    final now   = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     if (day == today) return s.today;
     if (day == today.subtract(const Duration(days: 1))) return s.yesterday;
     final isGreek = s.lang == AppLanguage.greek;
-    final months = isGreek ? _monthNamesEl : _monthNamesEn;
+    final months  = isGreek ? _monthNamesEl : _monthNamesEn;
     return isGreek
         ? '${day.day} ${months[day.month]} ${day.year}'
         : '${months[day.month]} ${day.day}, ${day.year}';
@@ -208,8 +286,8 @@ class _CallLogScreenState extends State<CallLogScreen> {
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (!_permissionGranted) return _centeredMessage(s.callLogPermissionNeeded);
 
-    final visible = _visible;
-    final grouped = _grouped(visible);
+    final visible  = _visible;
+    final grouped  = _grouped(visible);
 
     return Column(
       children: [
@@ -245,29 +323,27 @@ class _CallLogScreenState extends State<CallLogScreen> {
                       )
                     : SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _Chip(label: s.filterAll,
-                                selected: _filter == _Filter.all,
-                                onTap: () => setState(() => _filter = _Filter.all)),
-                            const SizedBox(width: 6),
-                            _Chip(label: s.filterMissed,
-                                selected: _filter == _Filter.missed,
-                                onTap: () => setState(() => _filter = _Filter.missed)),
-                            const SizedBox(width: 6),
-                            _Chip(label: s.filterIncoming,
-                                selected: _filter == _Filter.incoming,
-                                onTap: () => setState(() => _filter = _Filter.incoming)),
-                            const SizedBox(width: 6),
-                            _Chip(label: s.filterOutgoing,
-                                selected: _filter == _Filter.outgoing,
-                                onTap: () => setState(() => _filter = _Filter.outgoing)),
-                            const SizedBox(width: 6),
-                            _Chip(label: s.filterRejected,
-                                selected: _filter == _Filter.rejected,
-                                onTap: () => setState(() => _filter = _Filter.rejected)),
-                          ],
-                        ),
+                        child: Row(children: [
+                          _Chip(label: s.filterAll,
+                              selected: _filter == _Filter.all,
+                              onTap: () => setState(() => _filter = _Filter.all)),
+                          const SizedBox(width: 6),
+                          _Chip(label: s.filterMissed,
+                              selected: _filter == _Filter.missed,
+                              onTap: () => setState(() => _filter = _Filter.missed)),
+                          const SizedBox(width: 6),
+                          _Chip(label: s.filterIncoming,
+                              selected: _filter == _Filter.incoming,
+                              onTap: () => setState(() => _filter = _Filter.incoming)),
+                          const SizedBox(width: 6),
+                          _Chip(label: s.filterOutgoing,
+                              selected: _filter == _Filter.outgoing,
+                              onTap: () => setState(() => _filter = _Filter.outgoing)),
+                          const SizedBox(width: 6),
+                          _Chip(label: s.filterRejected,
+                              selected: _filter == _Filter.rejected,
+                              onTap: () => setState(() => _filter = _Filter.rejected)),
+                        ]),
                       ),
               ),
               if (!_searchVisible)
@@ -290,73 +366,107 @@ class _CallLogScreenState extends State<CallLogScreen> {
                 )
               : RefreshIndicator(
                   onRefresh: _load,
-                  child: ListView.builder(
+                  child: Scrollbar(
                     controller: _scrollController,
-                    cacheExtent: 800,
-                    physics: const AlwaysScrollableScrollPhysics(
-                        parent: BouncingScrollPhysics()),
-                    padding: const EdgeInsets.only(bottom: 16),
-                    itemCount: grouped.length,
-                    itemBuilder: (context, index) {
-                      final item = grouped[index];
+                    interactive: true,       // <-- allows dragging the thumb
+                    thumbVisibility: true,
+                    thickness: 6,
+                    radius: const Radius.circular(3),
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      cacheExtent: 800,
+                      physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics()),
+                      padding: const EdgeInsets.only(bottom: 16),
+                      itemCount: grouped.length,
+                      itemBuilder: (context, index) {
+                        final item = grouped[index];
 
-                      // ── date header ────────────────────────────────────
-                      if (item is DateTime) {
-                        return Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                          child: Text(
-                            _formatDayHeader(item),
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                              letterSpacing: 0.4,
+                        // ── date header ──────────────────────────────────
+                        if (item is DateTime) {
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                            child: Text(
+                              _formatDayHeader(item),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                          );
+                        }
+
+                        // ── call row ─────────────────────────────────────
+                        final e       = item as CallEntry;
+                        final semantic = _semanticType(e.type);
+                        final color   = AppTheme.callTypeColor(semantic);
+                        final isMissed = e.type == CallType.missed;
+
+                        return RepaintBoundary(
+                          child: Dismissible(
+                            key: ValueKey(e.id),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.only(right: 20),
+                              color: Colors.red,
+                              child: const Icon(Icons.delete_outline,
+                                  color: Colors.white),
+                            ),
+                            confirmDismiss: (_) async {
+                              await _deleteEntry(e);
+                              return false; // we handle removal ourselves
+                            },
+                            child: Card(
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 4),
+                                leading: CircleAvatar(
+                                  radius: 22,
+                                  backgroundColor: color.withValues(alpha: 0.14),
+                                  child: Icon(_iconFor(e.type),
+                                      color: color, size: 22),
+                                ),
+                                title: Text(
+                                  e.contactName ?? e.phoneNumber,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: isMissed ? AppColors.missed : null,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  '${_formatTime(e.timestamp)} · '
+                                  '${_formatDuration(e.duration)}',
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton.filledTonal(
+                                      icon: const Icon(Icons.call),
+                                      onPressed: () =>
+                                          _placeCallWithCheck(e.phoneNumber),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline,
+                                          size: 20),
+                                      color: Colors.red,
+                                      tooltip: s.delete,
+                                      onPressed: () => _deleteEntry(e),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         );
-                      }
-
-                      // ── call entry ─────────────────────────────────────
-                      final e = item as CallEntry;
-                      final semantic = _semanticType(e.type);
-                      final color = AppTheme.callTypeColor(semantic);
-                      final isMissed = e.type == CallType.missed;
-
-                      return RepaintBoundary(
-                        child: Card(
-                          margin: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 4),
-                            leading: CircleAvatar(
-                              radius: 22,
-                              backgroundColor: color.withValues(alpha: 0.14),
-                              child: Icon(_iconFor(e.type),
-                                  color: color, size: 22),
-                            ),
-                            title: Text(
-                              e.contactName ?? e.phoneNumber,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: isMissed ? AppColors.missed : null,
-                              ),
-                            ),
-                            subtitle: Text(
-                              '${_formatTime(e.timestamp)} · '
-                              '${_formatDuration(e.duration)}',
-                            ),
-                            trailing: IconButton.filledTonal(
-                              icon: const Icon(Icons.call),
-                              onPressed: () =>
-                                  widget.callsService.placeCall(e.phoneNumber),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
+                      },
+                    ),
                   ),
                 ),
         ),
