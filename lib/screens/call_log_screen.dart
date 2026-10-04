@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/call_entry.dart';
@@ -544,6 +545,17 @@ class _CallLogScreenState extends State<CallLogScreen> {
     final visible = _cacheVisible!;
     final grouped = _cacheGrouped!;
 
+    // Row heights follow the system text size so nothing gets clipped.
+    // Date header: 14 + 4 padding + 12px text (line height 1.43).
+    // Call row: 4 card margin + ListTile (min 72, or 8 padding + title 16/1.5
+    // + subtitle 14/1.43 when the text is scaled up).
+    final textScaler = MediaQuery.textScalerOf(context);
+    final headerExtent = (18 + textScaler.scale(12) * 1.43).ceilToDouble();
+    final rowExtent = (4 +
+            math.max(72.0,
+                8 + textScaler.scale(16) * 1.5 + textScaler.scale(14) * 1.43))
+        .ceilToDouble();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -640,6 +652,10 @@ class _CallLogScreenState extends State<CallLogScreen> {
                       // every scroll frame.
                       addAutomaticKeepAlives: false,
                       itemCount: grouped.length,
+                      // Fixed heights => exact scroll length, so dragging the
+                      // scroll bar is smooth and rows are laid out cheaply.
+                      itemExtentBuilder: (i, _) =>
+                          grouped[i] is DateTime ? headerExtent : rowExtent,
                       itemBuilder: (context, i) {
                         final item = grouped[i];
                         if (item is DateTime) {
@@ -690,6 +706,8 @@ class _CallLogScreenState extends State<CallLogScreen> {
                                         backgroundColor: color.withValues(alpha: 0.14),
                                         child: Icon(_iconFor(e.type), color: color, size: 22)),
                                 title: Text(e.contactName ?? e.phoneNumber,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                       color: isMissed ? AppColors.missed : null,
