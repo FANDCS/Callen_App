@@ -48,19 +48,21 @@ class LocalCallStore {
 
   Future<List<CallEntry>> mergeFromNative(List<CallEntry> nativeEntries) async {
     final db = await _database();
-    await db.transaction((txn) async {
-      for (final e in nativeEntries) {
-        final key = _naturalKey(e);
-        final existing = await txn.query(
-          _table,
-          where: 'natural_key = ?',
-          whereArgs: [key],
-          limit: 1,
-        );
-        if (existing.isNotEmpty) continue;
-        await txn.insert(_table, _toRow(e, key, id: _uuid.v4()));
-      }
-    });
+    // One query for all known keys instead of one query per call-log entry.
+    final rows = await db.rawQuery('SELECT natural_key FROM $_table');
+    final known = <String>{
+      for (final r in rows)
+        if (r['natural_key'] != null) r['natural_key'] as String,
+    };
+    final batch = db.batch();
+    var hasNew = false;
+    for (final e in nativeEntries) {
+      final key = _naturalKey(e);
+      if (!known.add(key)) continue;
+      batch.insert(_table, _toRow(e, key, id: _uuid.v4()));
+      hasNew = true;
+    }
+    if (hasNew) await batch.commit(noResult: true);
     return getAll();
   }
 

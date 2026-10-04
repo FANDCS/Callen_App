@@ -24,6 +24,18 @@ Future<Map<String, String>> _loadGrCodes() async {
   return _grCodes!;
 }
 
+// Fallback when the exact code is not in the table: region of the zone (2nd digit).
+const _grZones = {
+  '21': 'Αθήνα – Πειραιάς',
+  '22': 'Στερεά Ελλάδα / Αττική / Νησιά Αιγαίου',
+  '23': 'Κεντρική Μακεδονία',
+  '24': 'Θεσσαλία / Δυτική Μακεδονία',
+  '25': 'Ανατολική Μακεδονία & Θράκη',
+  '26': 'Ήπειρος / Δυτική Ελλάδα / Ιόνια Νησιά',
+  '27': 'Πελοπόννησος',
+  '28': 'Κρήτη',
+};
+
 String? _lookupCity(String localNumber, Map<String, String> codes) {
   for (int len = 5; len >= 3; len--) {
     if (localNumber.length >= len) {
@@ -31,6 +43,7 @@ String? _lookupCity(String localNumber, Map<String, String> codes) {
       if (codes.containsKey(key)) return codes[key];
     }
   }
+  if (localNumber.length >= 2) return _grZones[localNumber.substring(0, 2)];
   return null;
 }
 
@@ -122,7 +135,8 @@ class _CallLogScreenState extends State<CallLogScreen> {
   }
 
   Future<void> _init() async {
-    _grAreaCodes = await _loadGrCodes();
+    // Area codes load in parallel; they are only needed when the info dialog opens.
+    _loadGrCodes().then((codes) => _grAreaCodes = codes);
     await _load();
   }
 
@@ -237,7 +251,8 @@ class _CallLogScreenState extends State<CallLogScreen> {
   void _showPhoneInfo(BuildContext context, CallEntry e) {
     final s = widget.strings;
     final isGreek = s.lang == AppLanguage.greek;
-    final number = e.phoneNumber.replaceAll(RegExp(r'[\s\-()]'), '');
+    var number = e.phoneNumber.replaceAll(RegExp(r'[\s\-()]'), '');
+    if (number.startsWith('0030')) number = '+30${number.substring(4)}';
     String? origin;
     String type;
 
@@ -555,7 +570,9 @@ class _CallLogScreenState extends State<CallLogScreen> {
                       physics: const AlwaysScrollableScrollPhysics(
                           parent: ClampingScrollPhysics()),
                       padding: const EdgeInsets.only(bottom: 16),
-                      addRepaintBoundaries: false,
+                      // Repaint boundaries stay ON: each row (Card + shadow) is
+                      // cached as its own layer instead of being repainted on
+                      // every scroll frame.
                       addAutomaticKeepAlives: false,
                       itemCount: grouped.length,
                       itemBuilder: (context, i) {
