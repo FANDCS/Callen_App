@@ -87,9 +87,9 @@ const Map<String, String> _countryToFlagEmoji = {
   'MM': '🇲🇲', 'IR': '🇮🇷', 'MA': '🇲🇦', 'DZ': '🇩🇿', 'TN': '🇹🇳',
   'LY': '🇱🇾', 'GM': '🇬🇲', 'SN': '🇸🇳', 'MR': '🇲🇷', 'ML': '🇲🇱',
   'GN': '🇬🇳', 'CI': '🇨🇮', 'BF': '🇧🇫', 'NE': '🇳🇪', 'TG': '🇹🇬',
-  'BJ': '🇧🇯', 'MU': '🇲🇺', 'LR': '🇱🇷', 'SL': '🇸🇱', 'GH': '🇬🇭',
+  'BJ': 'BJ', 'MU': 'MU', 'LR': '🇱🇷', 'SL': '🇸🇱', 'GH': '🇬🇭',
   'NG': '🇳🇬', 'TD': '🇹🇩', 'CF': '🇨🇫', 'CM': '🇨🇲', 'CV': '🇨🇻',
-  'ST': '🇸🇹', 'GQ': '🇬🇶', 'GA': '🇬🇦', 'CG': '🇨🇬', 'CD': '🇨🇩',
+  'ST': '🇸🇹', 'GQ': 'GQ', 'GA': '🇬🇦', 'CG': '🇨🇬', 'CD': '🇨🇩',
   'AO': '🇦🇴', 'GW': '🇬🇼', 'IO': '🇮🇴', 'SC': '🇸🇨', 'SD': '🇸🇩',
   'RW': '🇷🇼', 'ET': '🇪🇹', 'SO': '🇸🇴', 'DJ': '🇩🇯', 'KE': '🇰🇪',
   'TZ': '🇹🇿', 'UG': '🇺🇬', 'BI': '🇧🇮', 'MZ': '🇲🇿', 'ZM': '🇿🇲',
@@ -99,7 +99,7 @@ const Map<String, String> _countryToFlagEmoji = {
   'MY': '🇲🇾', 'ID': '🇮🇩', 'PH': '🇵🇭', 'SG': '🇸🇬', 'TH': '🇹🇭',
   'HK': '🇭🇰', 'MO': '🇲🇴', 'KH': '🇰🇭', 'LA': '🇱🇦', 'BD': '🇧🇩',
   'TW': '🇹🇼', 'MV': '🇲🇻', 'LB': '🇱🇧', 'JO': '🇯🇴', 'SY': '🇸🇾',
-  - 'IQ': '🇮🇶', 'KW': '🇰🇼', 'SA': '🇸🇦', 'YE': '🇾🇪', 'OM': '🇴🇲',
+  'IQ': '🇮🇶', 'KW': '🇰🇼', 'SA': '🇸🇦', 'YE': '🇾🇪', 'OM': '🇴🇲',
   'PS': '🇵🇸', 'AE': '🇦🇪', 'IL': '🇮🇱', 'BH': '🇧🇭', 'QA': '🇶🇦',
   'BT': '🇧🇹', 'MN': '🇲🇳', 'NP': '🇳🇵', 'TJ': '🇹🇯', 'TM': '🇹🇲',
   'AZ': '🇦🇿', 'GE': '🇬🇪', 'KG': '🇰🇬', 'UZ': '🇺🇿',
@@ -108,11 +108,10 @@ const Map<String, String> _countryToFlagEmoji = {
   'AU': '🇦🇺', 'NZ': '🇳🇿', 'TL': '🇹🇱', 'BN': '🇧🇳', 'NR': '🇳🇷',
   'PG': '🇵🇬', 'TO': '🇹🇴', 'SB': '🇸🇧', 'VU': '🇻🇺', 'FJ': '🇫🇯',
   'PW': '🇵🇼', 'WF': '🇼🇫', 'CK': '🇨🇰', 'NU': '🇳🇺', 'WS': '🇼🇸',
-  'KI': '🇰🇮', 'NC': '🇳🇨', 'TV': '🇹🇻', 'PF': 'PF', 'TK': '🇹🇰',
+  'KI': '🇰🇮', 'NC': '🇳🇨', 'TV': '🇹🇻', 'PF': '🇵🇫', 'TK': '🇹🇰',
   'FM': '🇫🇲', 'MH': '🇲🇭',
 };
 
-// ΔΙΟΡΘΩΣΗ: Αλλαγή από b.length.compareTo(b.length) σε b.length.compareTo(a.length)
 final List<String> _sortedCodesByLength = _callingCodeToCountry.keys.toList()
 ..sort((a, b) => b.length.compareTo(a.length));
 
