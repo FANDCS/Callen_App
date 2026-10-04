@@ -27,7 +27,7 @@ Features:
 - Languages: 🇬🇧English, 🇬🇷Ελληνικά
 
 ### Screenshots
-<img alt="dialer" src="/fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" height="400">  <img alt="fake_call" src="/fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" height="400">  <img alt="fake_call" src="/fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" height="400">
+<img alt="dialer" src="/fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" height="400"> <img alt="fake_call" src="/fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" height="400">  <img alt="dialer" src="/fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" height="400">  <img alt="dialer" src="/fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" height="400">
 
 ## Supported Platforms
 * **Android:** 7+
