@@ -4,15 +4,6 @@ import 'package:uuid/uuid.dart';
 
 import '../models/call_entry.dart';
 
-/// Τοπική μόνιμη αποθήκευση του ιστορικού κλήσεων.
-///
-/// Πριν το sync, το Android διάβαζε το native call log ζωντανά σε κάθε
-/// φόρτωση της οθόνης και έδινε ΝΕΟ τυχαίο id σε κάθε εγγραφή - άρα δεν
-/// υπήρχε σταθερή ταυτότητα να συγχρονιστεί. Αυτό το store γίνεται η
-/// "πηγή αλήθειας": το Android κάνει merge το native call log εδώ μέσα
-/// (δίνοντας σταθερό id μία φορά ανά πραγματική κλήση), και το Linux
-/// (που δεν έχει καθόλου native call log) διαβάζει αποκλειστικά από εδώ -
-/// δηλαδή μόνο ό,τι έχει έρθει μέσω sync από το Android.
 class LocalCallStore {
   static const _dbName = 'callen_local.db';
   static const _table = 'call_entries';
@@ -52,17 +43,9 @@ class LocalCallStore {
     return _db!;
   }
 
-  /// Ένα "φυσικό κλειδί" από τα ίδια τα δεδομένα της κλήσης (χωρίς να
-  /// υπάρχει σταθερό id από το native call log), ώστε να ξέρουμε αν μια
-  /// εγγραφή που μόλις διαβάσαμε από το Android υπάρχει ήδη τοπικά ή είναι
-  /// καινούρια.
   String _naturalKey(CallEntry e) =>
       '${e.deviceOrigin}|${e.phoneNumber}|${e.timestamp.millisecondsSinceEpoch}|${e.duration.inSeconds}|${e.type.name}';
 
-  /// Καλείται ΜΟΝΟ από το Android: παίρνει ό,τι μόλις διάβασε από το
-  /// native call log, κάνει merge με ό,τι υπάρχει ήδη τοπικά (δίνοντας
-  /// σταθερό id στις πραγματικά καινούριες), και επιστρέφει ΟΛΕΣ τις
-  /// εγγραφές (native + όσες έχουν έρθει από sync) ταξινομημένες.
   Future<List<CallEntry>> mergeFromNative(List<CallEntry> nativeEntries) async {
     final db = await _database();
     await db.transaction((txn) async {
@@ -74,11 +57,8 @@ class LocalCallStore {
           whereArgs: [key],
           limit: 1,
         );
-        if (existing.isNotEmpty) continue; // ήδη γνωστή κλήση, δεν ξανά-μπαίνει
-        await txn.insert(
-          _table,
-          _toRow(e, key, id: _uuid.v4()),
-        );
+        if (existing.isNotEmpty) continue;
+        await txn.insert(_table, _toRow(e, key, id: _uuid.v4()));
       }
     });
     return getAll();
@@ -112,9 +92,6 @@ class LocalCallStore {
     );
   }
 
-  /// Καλείται όταν φτάνει μια εγγραφή από sync (δηλ. δημιουργήθηκε σε
-  /// ΑΛΛΗ συσκευή). Idempotent με βάση το id: αν την ξέρουμε ήδη, δεν
-  /// κάνουμε τίποτα.
   Future<void> insertFromRemote(CallEntry e) async {
     final db = await _database();
     final key = _naturalKey(e);
@@ -123,6 +100,11 @@ class LocalCallStore {
       _toRow(e, key)..['synced'] = 1,
       conflictAlgorithm: ConflictAlgorithm.ignore,
     );
+  }
+
+  Future<void> delete(String id) async {
+    final db = await _database();
+    await db.delete(_table, where: 'id = ?', whereArgs: [id]);
   }
 
   Map<String, Object?> _toRow(CallEntry e, String naturalKey, {String? id}) => {

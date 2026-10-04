@@ -40,12 +40,11 @@ Features:
   
   <a href="https://apkpure.com/p/gr.fandcs.callen" target="_blank">
     <img alt="APKPure" src="https://img.shields.io/badge/Get%20it%20on-APKPure-00ca73?style=for-the-badge&logo=android&logoColor=white">
-  </a>
-<!--  
-  <a href="https://gr.fandcs.callen.en.uptodown.com/android" target="_blank">
-    <img alt="Uptodown" src="https://img.shields.io/badge/Get%20it%20on-Uptodown-002B49?style=for-the-badge&logo=android&logoColor=white">
-  </a>
-  <!-- F-Droid 
+  </a><br>
+  <a href='https://callen.en.uptodown.com/android' title='Download Callen' >
+                <img src='https://stc.utdstc.com/img/mediakit/download-gio-small-b.png' alt='Download Callen'>
+                </a>
+<!-- F-Droid 
   <a href="https://f-droid.org/packages/gr.fandcs.callen/" target="_blank">
     <img alt="F-Droid" src="https://img.shields.io/badge/Get%20it%20on-F--Droid-1976D2?style=for-the-badge&logo=f-droid&logoColor=white">
   </a> -->

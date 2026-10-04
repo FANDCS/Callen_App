@@ -28,28 +28,21 @@ class OrgInfoScreen extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 56,
-                height: 56,
+                width: 56, height: 56,
                 decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
                 clipBehavior: Clip.antiAlias,
-                child: Image.asset(
-                  'assets/icons/fandcs_icon.png',
-                  fit: BoxFit.contain,
-                ),
+                child: Image.asset('assets/icons/fandcs_icon.png', fit: BoxFit.contain),
               ),
               const SizedBox(width: 16),
               const Expanded(
-                child: Text(
-                  'FANDCS',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-                ),
+                child: Text('FANDCS',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
               ),
             ],
           ),
           const SizedBox(height: 16),
           Text(strings.orgDescription),
           const SizedBox(height: 16),
-
           Material(
             color: AppColors.brand.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(14),
@@ -61,8 +54,7 @@ class OrgInfoScreen extends StatelessWidget {
                 child: Row(
                   children: [
                     Container(
-                      width: 36,
-                      height: 36,
+                      width: 36, height: 36,
                       decoration: BoxDecoration(
                         color: AppColors.brand.withValues(alpha: 0.16),
                         shape: BoxShape.circle,
@@ -74,15 +66,11 @@ class OrgInfoScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'GitHub',
-                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                          ),
+                          Text('GitHub',
+                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                           SizedBox(height: 2),
-                          Text(
-                            'github.com/FANDCS',
-                            style: TextStyle(fontSize: 13, color: Colors.grey),
-                          ),
+                          Text('github.com/FANDCS',
+                              style: TextStyle(fontSize: 13, color: Colors.grey)),
                         ],
                       ),
                     ),
@@ -92,24 +80,36 @@ class OrgInfoScreen extends StatelessWidget {
               ),
             ),
           ),
-
           const Divider(height: 40),
-
-          Text(
-            strings.contributors.toUpperCase(),
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-          ),
+          Text(strings.contributors.toUpperCase(),
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
           const SizedBox(height: 12),
+          // Developer — laptop icon
           ListTile(
-            leading: const Icon(Icons.person_outline),
+            leading: Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.brand.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.laptop_mac, size: 22, color: AppColors.brand),
+            ),
             title: const Text('Android Creator'),
             subtitle: Text(strings.developer),
             contentPadding: EdgeInsets.zero,
             trailing: const Icon(Icons.open_in_new, size: 18),
             onTap: () => _openUrl(context, 'https://github.com/AndroidCreator5'),
           ),
+          // Designer — palette icon
           ListTile(
-            leading: const Icon(Icons.person_outline),
+            leading: Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: Colors.purple.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.palette_outlined, size: 22, color: Colors.purple),
+            ),
             title: const Text('Alex632gr'),
             subtitle: Text(strings.designer),
             contentPadding: EdgeInsets.zero,

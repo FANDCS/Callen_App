@@ -21,6 +21,7 @@ class MainActivity : FlutterActivity() {
     private val ringtoneChannelName = "gr.fandcs.callen/ringtone"
     private val fakeCallChannelName = "gr.fandcs.callen/fakecall"
     private val simChannelName = "gr.fandcs.callen/sim"
+    private val callLogChannelName = "gr.fandcs.callen/calllog"
     private var ringtone: android.media.Ringtone? = null
     private var fakeCallChannel: MethodChannel? = null
 
@@ -78,6 +79,32 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, callLogChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "deleteEntry" -> {
+                        val number = call.argument<String>("number") ?: ""
+                        val timestampMs = call.argument<Long>("timestampMs") ?: 0L
+                        deleteCallLogEntry(number, timestampMs)
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    private fun deleteCallLogEntry(number: String, timestampMs: Long) {
+        try {
+            val uri = android.provider.CallLog.Calls.CONTENT_URI
+            val selection = "${android.provider.CallLog.Calls.NUMBER} = ? AND " +
+                "${android.provider.CallLog.Calls.DATE} >= ? AND " +
+                "${android.provider.CallLog.Calls.DATE} <= ?"
+            val args = arrayOf(number, (timestampMs - 2000).toString(), (timestampMs + 2000).toString())
+            contentResolver.delete(uri, selection, args)
+        } catch (e: Exception) {
+            // permission not granted or not available
+        }
     }
 
     private fun readSimContacts(): List<Map<String, String>> {

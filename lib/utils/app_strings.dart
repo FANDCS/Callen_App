@@ -97,6 +97,15 @@ class AppStrings {
   String get filterIncoming => _isGreek ? 'Εισερχόμενες' : 'Incoming';
   String get filterOutgoing => _isGreek ? 'Εξερχόμενες' : 'Outgoing';
   String get filterRejected => _isGreek ? 'Απορριφθείσες' : 'Rejected';
+  String get filters => _isGreek ? 'Φίλτρα' : 'Filters';
+  String get filterInternational => _isGreek ? 'Διεθνείς' : 'International';
+  String get filterLocal => _isGreek ? 'Τοπικές' : 'Local';
+  String get callInfo => _isGreek ? 'Πληροφορίες' : 'Info';
+  String get close => _isGreek ? 'Κλείσιμο' : 'Close';
+  String deleteCallConfirmMultiple(int n) => _isGreek
+      ? 'Να διαγραφούν $n κλήσεις;'
+      : 'Delete $n calls?';
+
   String get callLogNoResults => _isGreek ? 'Δεν βρέθηκαν κλήσεις.' : 'No calls found.';
   String get deleteCallTitle => _isGreek ? 'Διαγραφή κλήσης' : 'Delete call';
   String deleteCallConfirm(String name) => _isGreek
