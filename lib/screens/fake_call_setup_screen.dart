@@ -48,6 +48,27 @@ class _FakeCallSetupScreenState extends State<FakeCallSetupScreen> {
     } catch (_) {}
   }
 
+  /// Opens the system screen where the user picks which SIM/account is used
+  /// for calls (same screen as the first-time setup), so they can switch back
+  /// to their real SIM after a fake call.
+  Future<void> _openSimSettings() async {
+    bool opened = false;
+    try {
+      opened = await _fakeCallChannel.invokeMethod<bool>(
+            'openSettings',
+            {'target': 'callAccount'},
+          ) ??
+          false;
+    } catch (_) {}
+    if (!mounted) return;
+    if (!opened) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(widget.strings.restoreSimOpenFailed)),
+      );
+    }
+    await _fetchStatus();
+  }
+
   Future<void> _schedule() async {
     final name = _nameController.text.trim();
     final number = _numberController.text.trim();
@@ -184,6 +205,16 @@ class _FakeCallSetupScreenState extends State<FakeCallSetupScreen> {
                     .invokeMethod('openSettings', {'target': 'callAccount'});
                 await _fetchStatus();
               },
+            ),
+          ],
+          if (_mode == 'system') ...[
+            const SizedBox(height: 8),
+            _InfoBanner(
+              icon: Icons.sim_card_outlined,
+              color: Colors.blue,
+              text: s.restoreSimHint,
+              actionLabel: s.restoreSimButton,
+              onAction: _openSimSettings,
             ),
           ],
           const SizedBox(height: 24),

@@ -243,4 +243,13 @@ class AppStrings {
   String get deleteFromAppOnlySubtitle => _isGreek
       ? 'Κρύβει την κλήση μόνο μέσα στο Callen. Το Android call log παραμένει αναλλοίωτο.'
       : 'Hides the call only inside Callen. The Android call log stays unchanged.';
+  String get restoreSimButton => _isGreek
+      ? 'Επιλογή SIM για κλήσεις'
+      : 'Choose SIM for calls';
+  String get restoreSimHint => _isGreek
+      ? 'Μετά την ψεύτικη κλήση, πάτα εδώ για να επιλέξεις ξανά την αληθινή SIM σου.'
+      : 'After the fake call, tap here to switch back to your real SIM.';
+  String get restoreSimOpenFailed => _isGreek
+      ? 'Δεν ήταν δυνατό να ανοίξουν οι ρυθμίσεις SIM. Άνοιξέ τες χειροκίνητα από τις Ρυθμίσεις του κινητού.'
+      : 'Couldn\'t open the SIM settings. Please open them manually from your phone\'s Settings.';
 }
