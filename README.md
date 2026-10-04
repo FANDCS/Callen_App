@@ -61,4 +61,4 @@ Features:
 [Privacy Policy & Terms of Use on GitHub](https://raw.githubusercontent.com/FANDCS/main/refs/heads/main/Privacy_Policy_and_Terms_of_Use.md)
 
 #### Current Version
-`1.4.0 Stable Release`
+`0.1.4 Stable Release`
