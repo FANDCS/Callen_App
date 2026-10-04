@@ -47,6 +47,21 @@ String? _lookupCity(String localNumber, Map<String, String> codes) {
   return null;
 }
 
+// ── Mobile provider lookup (original allocation only) ────────────────────────
+// Number portability lets people keep their number when switching provider,
+// so this is only a best guess based on who the prefix was first assigned to.
+
+const _grMobileProviders = {
+  '690': 'Nova', '693': 'Nova', '699': 'Nova',
+  '694': 'Vodafone', '695': 'Vodafone',
+  '697': 'Cosmote', '698': 'Cosmote',
+};
+
+String? _lookupMobileProvider(String localNumber) {
+  if (localNumber.length < 3) return null;
+  return _grMobileProviders[localNumber.substring(0, 3)];
+}
+
 // ── Country code lookup ───────────────────────────────────────────────────────
 
 const _countryCodes = {
@@ -114,6 +129,12 @@ class CallLogScreen extends StatefulWidget {
 
 class _CallLogScreenState extends State<CallLogScreen> {
   List<CallEntry> _entries = [];
+  // cache of the filtered / grouped list (see build)
+  List<CallEntry>? _cacheVisible;
+  List<Object>? _cacheGrouped;
+  List<CallEntry>? _cacheEntriesRef;
+  int _cacheEntriesLen = -1;
+  String _cacheKeyStr = '';
   bool _loading = true;
   bool _permissionGranted = true;
   Map<String, String> _grAreaCodes = {};
@@ -148,6 +169,17 @@ class _CallLogScreenState extends State<CallLogScreen> {
   }
 
   Future<void> _load() async {
+    // Show what is already stored locally right away (the tab is rebuilt every
+    // time you come back to it), then refresh from the system call log below.
+    if (_entries.isEmpty) {
+      try {
+        final cached = await widget.callsService.getCachedCallLog();
+        if (!mounted) return;
+        if (cached.isNotEmpty) {
+          setState(() { _entries = cached; _loading = false; });
+        }
+      } catch (_) {}
+    }
     final callsGranted = await widget.callsService.requestPermissions();
     if (!callsGranted) {
       if (!mounted) return;
@@ -241,8 +273,10 @@ class _CallLogScreenState extends State<CallLogScreen> {
     await widget.callsService.placeCall(number);
   }
 
+  static final RegExp _nonDigitPlus = RegExp(r'[^\d+]');
+
   bool _isInternational(String number) {
-    final d = number.replaceAll(RegExp(r'[^\d+]'), '');
+    final d = number.replaceAll(_nonDigitPlus, '');
     return d.startsWith('+') && !d.startsWith('+30');
   }
 
@@ -254,6 +288,7 @@ class _CallLogScreenState extends State<CallLogScreen> {
     var number = e.phoneNumber.replaceAll(RegExp(r'[\s\-()]'), '');
     if (number.startsWith('0030')) number = '+30${number.substring(4)}';
     String? origin;
+    String? provider;
     String type;
 
     if (number.startsWith('+30') ||
@@ -261,6 +296,7 @@ class _CallLogScreenState extends State<CallLogScreen> {
       final local = number.startsWith('+30') ? number.substring(3) : number;
       if (local.startsWith('69') || local.startsWith('6')) {
         type = isGreek ? 'Κινητό (Ελλάδα)' : 'Mobile (Greece)';
+        provider = _lookupMobileProvider(local);
       } else {
         origin = _lookupCity(local, _grAreaCodes);
         type = isGreek ? 'Σταθερό (Ελλάδα)' : 'Landline (Greece)';
@@ -293,6 +329,22 @@ class _CallLogScreenState extends State<CallLogScreen> {
             if (origin != null)
               _InfoRow(Icons.location_on_outlined,
                   isGreek ? 'Περιοχή: $origin' : 'Area: $origin'),
+            if (provider != null) ...[
+              _InfoRow(Icons.sim_card_outlined,
+                  isGreek ? 'Πάροχος: $provider' : 'Carrier: $provider'),
+              Padding(
+                padding: const EdgeInsets.only(left: 28, bottom: 4),
+                child: Text(
+                  isGreek
+                      ? 'Ενδεικτικό: λόγω φορητότητας αριθμών, ο πάροχος μπορεί να έχει αλλάξει. Η επιτυχία είναι μερική.'
+                      : 'Approximate: because of number portability the carrier may have changed. Only partially accurate.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
             if (e.contactName != null)
               _InfoRow(Icons.person_outline, e.contactName!),
           ],
@@ -476,8 +528,21 @@ class _CallLogScreenState extends State<CallLogScreen> {
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (!_permissionGranted) return _msg(s.callLogPermissionNeeded);
 
-    final visible = _visible;
-    final grouped = _grouped(visible);
+    // Filtering + grouping is O(n); with a large call log don't redo it on
+    // every rebuild (selection, typing in other fields, ...).
+    final cacheKey = '${(_activeFilters.map((f) => f.index).toList()..sort())}|$_searchQuery';
+    if (_cacheVisible == null ||
+        !identical(_cacheEntriesRef, _entries) ||
+        _cacheEntriesLen != _entries.length ||
+        _cacheKeyStr != cacheKey) {
+      _cacheVisible = _visible;
+      _cacheGrouped = _grouped(_cacheVisible!);
+      _cacheEntriesRef = _entries;
+      _cacheEntriesLen = _entries.length;
+      _cacheKeyStr = cacheKey;
+    }
+    final visible = _cacheVisible!;
+    final grouped = _cacheGrouped!;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

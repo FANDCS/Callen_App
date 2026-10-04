@@ -13,6 +13,9 @@ class CallsServiceStub implements CallsService {
   Future<List<CallEntry>> getCallLog({int? limit}) => localStore.getAll(limit: limit);
 
   @override
+  Future<List<CallEntry>> getCachedCallLog() => localStore.getAll();
+
+  @override
   Future<void> placeCall(String phoneNumber) async {}
 
   @override

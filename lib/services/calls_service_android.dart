@@ -44,6 +44,9 @@ class CallsServiceAndroid implements CallsService {
   }
 
   @override
+  Future<List<CallEntry>> getCachedCallLog() => localStore.getAll();
+
+  @override
   Future<void> placeCall(String phoneNumber) async {
     final status = await Permission.phone.request();
     if (!status.isGranted) {
