@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/call_entry.dart';
@@ -8,71 +9,32 @@ import '../theme/app_theme.dart';
 import '../utils/app_strings.dart';
 import '../utils/phone_utils.dart';
 
-// ── Greek area code → city ────────────────────────────────────────────────────
-const _grPrefixEl = {
-  // Αττική
-  '210': 'Αθήνα', '211': 'Αθήνα', '212': 'Αθήνα', '213': 'Αθήνα',
-  '214': 'Αθήνα', '215': 'Αθήνα', '216': 'Αθήνα',
-  // Θεσσαλονίκη
-  '2310': 'Θεσσαλονίκη', '2311': 'Θεσσαλονίκη', '2312': 'Θεσσαλονίκη', '2313': 'Θεσσαλονίκη',
-  // Θεσσαλία
-  '2410': 'Λάρισα', '2411': 'Λάρισα',
-  '24210': 'Βόλος', '24220': 'Αλμυρός',
-  '24310': 'Τρίκαλα', '24410': 'Καρδίτσα',
-  // Κεντρ. Μακεδονία
-  '2321': 'Βέροια', '2331': 'Νάουσα', '2351': 'Κατερίνη',
-  '2371': 'Σέρρες', '2381': 'Κιλκίς', '2391': 'Γιαννιτσά',
-  '23210': 'Έδεσσα',
-  // Δυτ. Μακεδονία
-  '23310': 'Φλώρινα', '23510': 'Κοζάνη', '23610': 'Πτολεμαΐδα',
-  '23710': 'Γρεβενά', '23820': 'Καστοριά',
-  // Ανατ. Μακεδονία - Θράκη
-  '2510': 'Καβάλα', '2521': 'Δράμα', '2531': 'Ξάνθη',
-  '2541': 'Κομοτηνή', '2551': 'Αλεξανδρούπολη',
-  // Ήπειρος
-  '26510': 'Ιωάννινα', '26550': 'Άρτα', '26650': 'Λευκάδα',
-  // Ιόνια Νησιά
-  '26610': 'Κέρκυρα',
-  // Δυτ. Ελλάδα
-  '2610': 'Πάτρα', '2611': 'Πάτρα', '2612': 'Πάτρα',
-  '26210': 'Αγρίνιο', '26310': 'Μεσολόγγι', '26910': 'Πύργος',
-  // Στερεά Ελλάδα
-  '22310': 'Λαμία', '22610': 'Χαλκίδα', '22650': 'Λειβαδιά',
-  // Πελοπόννησος
-  '27210': 'Καλαμάτα', '27310': 'Σπάρτη', '27410': 'Τρίπολη',
-  '27420': 'Άργος', '27520': 'Ναύπλιο', '27610': 'Κόρινθος',
-  // Κρήτη
-  '2810': 'Ηράκλειο', '2811': 'Ηράκλειο',
-  '2821': 'Χανιά', '2831': 'Ρέθυμνο', '2841': 'Άγιος Νικόλαος',
-  // Νησιά Αιγαίου
-  '22410': 'Ρόδος', '22460': 'Κως', '22730': 'Χίος', '22510': 'Μυτιλήνη',
-  '22890': 'Μύκονος', '22860': 'Σαντορίνη', '22840': 'Πάρος',
-  '22850': 'Νάξος', '22810': 'Σύρος', '22980': 'Αίγινα',
-};
+// ── Area code lookup ──────────────────────────────────────────────────────────
 
-const _grPrefixEn = {
-  '210': 'Athens', '211': 'Athens', '212': 'Athens', '213': 'Athens',
-  '214': 'Athens', '215': 'Athens', '216': 'Athens',
-  '2310': 'Thessaloniki', '2311': 'Thessaloniki', '2312': 'Thessaloniki', '2313': 'Thessaloniki',
-  '2410': 'Larissa', '2411': 'Larissa',
-  '24210': 'Volos', '24220': 'Almyros', '24310': 'Trikala', '24410': 'Karditsa',
-  '2321': 'Veria', '2351': 'Katerini', '2371': 'Serres',
-  '23510': 'Kozani', '23610': 'Ptolemaida', '23820': 'Kastoria',
-  '2510': 'Kavala', '2521': 'Drama', '2531': 'Xanthi',
-  '2541': 'Komotini', '2551': 'Alexandroupoli',
-  '26510': 'Ioannina', '26550': 'Arta', '26650': 'Lefkada',
-  '26610': 'Corfu',
-  '2610': 'Patras', '2611': 'Patras', '2612': 'Patras',
-  '26210': 'Agrinio', '26310': 'Messolonghi', '26910': 'Pyrgos',
-  '22310': 'Lamia', '22610': 'Chalkida', '22650': 'Livadeia',
-  '27210': 'Kalamata', '27310': 'Sparta', '27410': 'Tripoli',
-  '27420': 'Argos', '27520': 'Nafplio', '27610': 'Corinth',
-  '2810': 'Heraklion', '2811': 'Heraklion',
-  '2821': 'Chania', '2831': 'Rethymno', '2841': 'Agios Nikolaos',
-  '22410': 'Rhodes', '22460': 'Kos', '22730': 'Chios', '22510': 'Mytilene',
-  '22890': 'Mykonos', '22860': 'Santorini', '22840': 'Paros',
-  '22850': 'Naxos', '22810': 'Syros', '22980': 'Aegina',
-};
+Map<String, String>? _grCodes;
+
+Future<Map<String, String>> _loadGrCodes() async {
+  if (_grCodes != null) return _grCodes!;
+  try {
+    final raw = await rootBundle.loadString('assets/data/gr_area_codes.json');
+    _grCodes = Map<String, String>.from(json.decode(raw) as Map);
+  } catch (_) {
+    _grCodes = {};
+  }
+  return _grCodes!;
+}
+
+String? _lookupCity(String localNumber, Map<String, String> codes) {
+  for (int len = 5; len >= 3; len--) {
+    if (localNumber.length >= len) {
+      final key = localNumber.substring(0, len);
+      if (codes.containsKey(key)) return codes[key];
+    }
+  }
+  return null;
+}
+
+// ── Country code lookup ───────────────────────────────────────────────────────
 
 const _countryCodes = {
   '+1': 'USA/Canada', '+7': 'Russia', '+20': 'Egypt',
@@ -81,10 +43,9 @@ const _countryCodes = {
   '+36': 'Hungary', '+39': 'Italy', '+40': 'Romania',
   '+41': 'Switzerland', '+43': 'Austria', '+44': 'UK',
   '+45': 'Denmark', '+46': 'Sweden', '+47': 'Norway',
-  '+48': 'Poland', '+49': 'Germany', '+51': 'Peru',
-  '+52': 'Mexico', '+53': 'Cuba', '+54': 'Argentina',
-  '+55': 'Brazil', '+56': 'Chile', '+57': 'Colombia',
-  '+58': 'Venezuela', '+60': 'Malaysia', '+61': 'Australia',
+  '+48': 'Poland', '+49': 'Germany', '+52': 'Mexico',
+  '+54': 'Argentina', '+55': 'Brazil', '+56': 'Chile',
+  '+57': 'Colombia', '+60': 'Malaysia', '+61': 'Australia',
   '+62': 'Indonesia', '+63': 'Philippines', '+64': 'New Zealand',
   '+65': 'Singapore', '+66': 'Thailand', '+81': 'Japan',
   '+82': 'South Korea', '+84': 'Vietnam', '+86': 'China',
@@ -105,7 +66,21 @@ const _countryCodes = {
   '+995': 'Georgia', '+998': 'Uzbekistan',
 };
 
+String? _lookupCountry(String number) {
+  for (int len = 4; len >= 2; len--) {
+    if (number.length >= len) {
+      final code = number.substring(0, len);
+      if (_countryCodes.containsKey(code)) return _countryCodes[code];
+    }
+  }
+  return null;
+}
+
+// ── Filter enum ───────────────────────────────────────────────────────────────
+
 enum _Filter { all, missed, incoming, outgoing, rejected, international, local }
+
+// ── Widget ────────────────────────────────────────────────────────────────────
 
 class CallLogScreen extends StatefulWidget {
   final CallsService callsService;
@@ -128,6 +103,7 @@ class _CallLogScreenState extends State<CallLogScreen> {
   List<CallEntry> _entries = [];
   bool _loading = true;
   bool _permissionGranted = true;
+  Map<String, String> _grAreaCodes = {};
 
   final _searchController = TextEditingController();
   String _searchQuery = '';
@@ -140,10 +116,14 @@ class _CallLogScreenState extends State<CallLogScreen> {
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(() {
-      setState(() => _searchQuery = _searchController.text.trim().toLowerCase());
-    });
-    _load();
+    _searchController.addListener(
+        () => setState(() => _searchQuery = _searchController.text.trim().toLowerCase()));
+    _init();
+  }
+
+  Future<void> _init() async {
+    _grAreaCodes = await _loadGrCodes();
+    await _load();
   }
 
   @override
@@ -167,8 +147,7 @@ class _CallLogScreenState extends State<CallLogScreen> {
     final contactsGranted = await widget.contactsService.requestPermission();
     if (!contactsGranted || !mounted) return;
     final contacts = await widget.contactsService.getContacts(
-      sourceIds: widget.store.contactSources,
-    );
+        sourceIds: widget.store.contactSources);
     final nameByNumber = <String, String>{};
     for (final c in contacts) {
       for (final phone in c.phoneNumbers) {
@@ -210,8 +189,7 @@ class _CallLogScreenState extends State<CallLogScreen> {
     if (widget.store.deleteFromAndroid) {
       for (final e in toDelete) {
         try {
-          final ch = MethodChannel('gr.fandcs.callen/calllog');
-          await ch.invokeMethod('deleteEntry', {
+          await MethodChannel('gr.fandcs.callen/calllog').invokeMethod('deleteEntry', {
             'number': e.phoneNumber,
             'timestampMs': e.timestamp.millisecondsSinceEpoch,
           });
@@ -223,16 +201,12 @@ class _CallLogScreenState extends State<CallLogScreen> {
     }
     if (!mounted) return;
     final ids = toDelete.map((e) => e.id).toSet();
-    setState(() {
-      _entries.removeWhere((e) => ids.contains(e.id));
-      _selected.clear();
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(s.callDeleted)),
-    );
+    setState(() { _entries.removeWhere((e) => ids.contains(e.id)); _selected.clear(); });
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(s.callDeleted)));
   }
 
-  // ── international call confirm ────────────────────────────────────────────
+  // ── call with confirm ─────────────────────────────────────────────────────
 
   Future<void> _placeCallWithCheck(String number) async {
     if (widget.store.confirmIntlCalls && _isInternational(number)) {
@@ -267,29 +241,17 @@ class _CallLogScreenState extends State<CallLogScreen> {
     String? origin;
     String type;
 
-    if (number.startsWith('+30') || (!number.startsWith('+') && number.startsWith('2'))) {
+    if (number.startsWith('+30') ||
+        (!number.startsWith('+') && (number.startsWith('2') || number.startsWith('69')))) {
       final local = number.startsWith('+30') ? number.substring(3) : number;
-      final prefixMap = isGreek ? _grPrefixEl : _grPrefixEn;
-      for (int len = 5; len >= 3; len--) {
-        if (local.length >= len) {
-          final key = local.substring(0, len);
-          if (prefixMap.containsKey(key)) { origin = prefixMap[key]; break; }
-        }
+      if (local.startsWith('69') || local.startsWith('6')) {
+        type = isGreek ? 'Κινητό (Ελλάδα)' : 'Mobile (Greece)';
+      } else {
+        origin = _lookupCity(local, _grAreaCodes);
+        type = isGreek ? 'Σταθερό (Ελλάδα)' : 'Landline (Greece)';
       }
-      if (origin == null && local.startsWith('21')) origin = isGreek ? 'Αθήνα' : 'Athens';
-      type = isGreek ? 'Σταθερό (Ελλάδα)' : 'Landline (Greece)';
-    } else if (number.startsWith('69') ||
-        number.startsWith('+3069') ||
-        (number.startsWith('+30') && number.substring(3).startsWith('69'))) {
-      type = isGreek ? 'Κινητό (Ελλάδα)' : 'Mobile (Greece)';
     } else if (number.startsWith('+')) {
-      String? country;
-      for (int len = 4; len >= 2; len--) {
-        if (number.length >= len) {
-          final code = number.substring(0, len);
-          if (_countryCodes.containsKey(code)) { country = _countryCodes[code]; break; }
-        }
-      }
+      final country = _lookupCountry(number);
       type = country != null
           ? (isGreek ? 'Διεθνής — $country' : 'International — $country')
           : (isGreek ? 'Διεθνής' : 'International');
@@ -332,7 +294,7 @@ class _CallLogScreenState extends State<CallLogScreen> {
     );
   }
 
-  // ── filter menu ───────────────────────────────────────────────────────────
+  // ── filter dialog (scrollable) ────────────────────────────────────────────
 
   void _showFilterMenu(BuildContext context) {
     final s = widget.strings;
@@ -346,53 +308,55 @@ class _CallLogScreenState extends State<CallLogScreen> {
       _Filter.local: s.filterLocal,
     };
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Row(
-                children: [
-                  Text(s.filters,
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () {
-                      setLocal(() { _activeFilters..clear()..add(_Filter.all); });
-                      setState(() { _activeFilters..clear()..add(_Filter.all); });
-                    },
-                    child: Text(s.filterAll),
-                  ),
-                ],
-              ),
-            ),
-            ...items.entries.map((entry) {
-              final f = entry.key;
-              return CheckboxListTile(
-                title: Text(entry.value),
-                value: _activeFilters.contains(f),
-                onChanged: (v) {
-                  setLocal(() {
-                    if (f == _Filter.all) {
-                      _activeFilters..clear()..add(_Filter.all);
-                    } else {
-                      _activeFilters.remove(_Filter.all);
-                      if (v == true) _activeFilters.add(f);
-                      else _activeFilters.remove(f);
-                      if (_activeFilters.isEmpty) _activeFilters.add(_Filter.all);
-                    }
-                  });
-                  setState(() {});
+        builder: (ctx, setLocal) => AlertDialog(
+          title: Row(
+            children: [
+              Expanded(child: Text(s.filters,
+                  style: const TextStyle(fontWeight: FontWeight.w700))),
+              TextButton(
+                child: Text(s.filterAll),
+                onPressed: () {
+                  setLocal(() { _activeFilters..clear()..add(_Filter.all); });
+                  setState(() { _activeFilters..clear()..add(_Filter.all); });
                 },
-              );
-            }),
-            const SizedBox(height: 16),
+              ),
+            ],
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: items.entries.map((entry) {
+                final f = entry.key;
+                return CheckboxListTile(
+                  dense: true,
+                  title: Text(entry.value),
+                  value: _activeFilters.contains(f),
+                  onChanged: (v) {
+                    setLocal(() {
+                      if (f == _Filter.all) {
+                        _activeFilters..clear()..add(_Filter.all);
+                      } else {
+                        _activeFilters.remove(_Filter.all);
+                        if (v == true) _activeFilters.add(f);
+                        else _activeFilters.remove(f);
+                        if (_activeFilters.isEmpty) _activeFilters.add(_Filter.all);
+                      }
+                    });
+                    setState(() {});
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(s.close),
+            ),
           ],
         ),
       ),
@@ -419,13 +383,14 @@ class _CallLogScreenState extends State<CallLogScreen> {
     if (_searchQuery.isNotEmpty) {
       list = list.where((e) {
         final name = (e.contactName ?? '').toLowerCase();
-        return name.contains(_searchQuery) || e.phoneNumber.toLowerCase().contains(_searchQuery);
+        return name.contains(_searchQuery) ||
+            e.phoneNumber.toLowerCase().contains(_searchQuery);
       }).toList();
     }
     return list;
   }
 
-  // ── group by date ─────────────────────────────────────────────────────────
+  // ── grouping ──────────────────────────────────────────────────────────────
 
   List<Object> _grouped(List<CallEntry> entries) {
     final result = <Object>[];
@@ -461,10 +426,10 @@ class _CallLogScreenState extends State<CallLogScreen> {
     }
   }
 
-  String _formatDuration(Duration d) =>
+  String _fmt(Duration d) =>
       '${d.inMinutes.toString().padLeft(2, '0')}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
 
-  String _formatTime(DateTime dt) {
+  String _fmtTime(DateTime dt) {
     final l = dt.toLocal();
     return '${l.hour.toString().padLeft(2, '0')}:${l.minute.toString().padLeft(2, '0')}';
   }
@@ -474,7 +439,7 @@ class _CallLogScreenState extends State<CallLogScreen> {
   static const _mEn = ['','January','February','March','April','May','June',
       'July','August','September','October','November','December'];
 
-  String _formatDayHeader(DateTime day) {
+  String _dayHeader(DateTime day) {
     final s = widget.strings;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -485,7 +450,8 @@ class _CallLogScreenState extends State<CallLogScreen> {
     return gr ? '${day.day} ${m[day.month]} ${day.year}' : '${m[day.month]} ${day.day}, ${day.year}';
   }
 
-  bool get _filtersActive => !(_activeFilters.length == 1 && _activeFilters.contains(_Filter.all));
+  bool get _filtersActive =>
+      !(_activeFilters.length == 1 && _activeFilters.contains(_Filter.all));
 
   // ── build ─────────────────────────────────────────────────────────────────
 
@@ -493,7 +459,7 @@ class _CallLogScreenState extends State<CallLogScreen> {
   Widget build(BuildContext context) {
     final s = widget.strings;
     if (_loading) return const Center(child: CircularProgressIndicator());
-    if (!_permissionGranted) return _centeredMessage(s.callLogPermissionNeeded);
+    if (!_permissionGranted) return _msg(s.callLogPermissionNeeded);
 
     final visible = _visible;
     final grouped = _grouped(visible);
@@ -501,12 +467,11 @@ class _CallLogScreenState extends State<CallLogScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── toolbar — sits flush under the AppBar ──────────────────────
+        // ── toolbar ──────────────────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 0, 4, 0),
           child: Row(
             children: [
-              // search field (takes remaining space when open)
               if (_searchVisible)
                 Expanded(
                   child: TextField(
@@ -534,8 +499,6 @@ class _CallLogScreenState extends State<CallLogScreen> {
                 )
               else
                 const Spacer(),
-
-              // multi-select delete
               if (_selecting)
                 IconButton(
                   icon: const Icon(Icons.delete_outline, color: Colors.red),
@@ -543,8 +506,6 @@ class _CallLogScreenState extends State<CallLogScreen> {
                   onPressed: () => _deleteEntries(
                       _entries.where((e) => _selected.contains(e.id)).toList()),
                 ),
-
-              // filter with active-dot badge
               Stack(
                 alignment: Alignment.topRight,
                 children: [
@@ -566,8 +527,6 @@ class _CallLogScreenState extends State<CallLogScreen> {
                     ),
                 ],
               ),
-
-              // search toggle
               if (!_searchVisible)
                 IconButton(
                   icon: const Icon(Icons.search),
@@ -578,11 +537,11 @@ class _CallLogScreenState extends State<CallLogScreen> {
           ),
         ),
 
-        // ── list ──────────────────────────────────────────────────────
+        // ── list ──────────────────────────────────────────────────────────
         Expanded(
           child: visible.isEmpty
-              ? _centeredMessage(
-                  _searchQuery.isNotEmpty || _filtersActive ? s.callLogNoResults : s.callLogEmpty)
+              ? _msg(_searchQuery.isNotEmpty || _filtersActive
+                  ? s.callLogNoResults : s.callLogEmpty)
               : RefreshIndicator(
                   onRefresh: _load,
                   child: Scrollbar(
@@ -601,25 +560,21 @@ class _CallLogScreenState extends State<CallLogScreen> {
                       itemCount: grouped.length,
                       itemBuilder: (context, i) {
                         final item = grouped[i];
-
                         if (item is DateTime) {
                           return Padding(
                             padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
-                            child: Text(
-                              _formatDayHeader(item),
-                              style: TextStyle(
-                                fontSize: 12, fontWeight: FontWeight.w700,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                letterSpacing: 0.4,
-                              ),
-                            ),
+                            child: Text(_dayHeader(item),
+                                style: TextStyle(
+                                  fontSize: 12, fontWeight: FontWeight.w700,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  letterSpacing: 0.4,
+                                )),
                           );
                         }
-
                         final e = item as CallEntry;
                         final color = AppTheme.callTypeColor(_semanticType(e.type));
                         final isMissed = e.type == CallType.missed;
-                        final isSelected = _selected.contains(e.id);
+                        final isSel = _selected.contains(e.id);
 
                         return Dismissible(
                           key: ValueKey(e.id),
@@ -630,42 +585,34 @@ class _CallLogScreenState extends State<CallLogScreen> {
                             color: Colors.red,
                             child: const Icon(Icons.delete_outline, color: Colors.white),
                           ),
-                          confirmDismiss: (_) async {
-                            await _deleteEntries([e]);
-                            return false;
-                          },
+                          confirmDismiss: (_) async { await _deleteEntries([e]); return false; },
                           child: GestureDetector(
                             onLongPress: () => setState(() {
-                              if (isSelected) _selected.remove(e.id);
+                              if (isSel) _selected.remove(e.id);
                               else _selected.add(e.id);
                             }),
                             child: Card(
                               margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              color: isSelected
+                              color: isSel
                                   ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.4)
                                   : null,
                               child: ListTile(
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                                leading: isSelected
+                                leading: isSel
                                     ? CircleAvatar(
                                         radius: 22,
                                         backgroundColor: Theme.of(context).colorScheme.primary,
-                                        child: const Icon(Icons.check, color: Colors.white, size: 20),
-                                      )
+                                        child: const Icon(Icons.check, color: Colors.white, size: 20))
                                     : CircleAvatar(
                                         radius: 22,
                                         backgroundColor: color.withValues(alpha: 0.14),
-                                        child: Icon(_iconFor(e.type), color: color, size: 22),
-                                      ),
-                                title: Text(
-                                  e.contactName ?? e.phoneNumber,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: isMissed ? AppColors.missed : null,
-                                  ),
-                                ),
-                                subtitle: Text(
-                                  '${_formatTime(e.timestamp)} · ${_formatDuration(e.duration)}'),
+                                        child: Icon(_iconFor(e.type), color: color, size: 22)),
+                                title: Text(e.contactName ?? e.phoneNumber,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: isMissed ? AppColors.missed : null,
+                                    )),
+                                subtitle: Text('${_fmtTime(e.timestamp)} · ${_fmt(e.duration)}'),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -693,13 +640,14 @@ class _CallLogScreenState extends State<CallLogScreen> {
     );
   }
 
-  Widget _centeredMessage(String msg) => RefreshIndicator(
+  Widget _msg(String msg) => RefreshIndicator(
         onRefresh: _load,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
           children: [
             const SizedBox(height: 120),
-            Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(msg, textAlign: TextAlign.center))),
+            Center(child: Padding(padding: const EdgeInsets.all(24),
+                child: Text(msg, textAlign: TextAlign.center))),
           ],
         ),
       );
