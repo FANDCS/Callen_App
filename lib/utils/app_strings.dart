@@ -252,4 +252,18 @@ class AppStrings {
   String get restoreSimOpenFailed => _isGreek
       ? 'Δεν ήταν δυνατό να ανοίξουν οι ρυθμίσεις SIM. Άνοιξέ τες χειροκίνητα από τις Ρυθμίσεις του κινητού.'
       : 'Couldn\'t open the SIM settings. Please open them manually from your phone\'s Settings.';
+
+  // ── Fake call audio ───────────────────────────────────────────────────────
+  String get audioSectionTitle => _isGreek ? 'Ήχος κλήσης' : 'Call sound';
+  String get audioFileChoose => _isGreek ? 'Επιλογή αρχείου ήχου' : 'Choose audio file';
+  String get audioFileDefault => _isGreek
+      ? 'Κανένα αρχείο· σιωπή κατά τη διάρκεια της κλήσης'
+      : 'No file· silent during the call';
+  String get audioFileLoopHint => _isGreek
+      ? 'Παίζει σε επανάληψη όσο η κλήση είναι ενεργή'
+      : 'Loops while the call is active';
+  String get audioFileRemove => _isGreek ? 'Απενεργοποίηση αρχείου ήχου' : 'Disable audio file';
+  String get audioFileEndAfter => _isGreek
+      ? 'Τερματισμός κλήσης 1 δευτ. μετά το τέλος του αρχείου'
+      : 'End call 1 sec after the file finishes';
 }

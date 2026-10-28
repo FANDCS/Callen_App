@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../services/settings_store.dart';
 import '../utils/app_strings.dart';
 
 const _fakeCallChannel = MethodChannel('gr.fandcs.callen/fakecall');
@@ -23,11 +24,67 @@ class _FakeCallSetupScreenState extends State<FakeCallSetupScreen> {
   bool _scheduled = false;
   // null = unknown, true/false from getStatus
   bool? _systemAccountEnabled;
+  // Αρχείο ήχου κλήσης (αποθηκεύεται και θυμάται μέχρι να αλλάξει/απενεργοποιηθεί)
+  SettingsStore? _store;
+  String? _audioUri;
+  String _audioName = '';
+  bool _endAfterAudio = false;
 
   @override
   void initState() {
     super.initState();
     _fetchStatus();
+    _loadAudioSettings();
+  }
+
+  Future<void> _loadAudioSettings() async {
+    final store = await SettingsStore.load();
+    if (!mounted) return;
+    setState(() {
+      _store = store;
+      _audioUri = store.fakeCallAudioUri;
+      _audioName = store.fakeCallAudioName;
+      _endAfterAudio = store.fakeCallEndAfterAudio;
+    });
+  }
+
+  Future<SettingsStore> _ensureStore() async => _store ?? await SettingsStore.load();
+
+  /// Ανοίγει τον επιλογέα αρχείων. Δέχεται οποιοδήποτε γνωστό αρχείο ήχου.
+  Future<void> _pickAudio() async {
+    Map<dynamic, dynamic>? res;
+    try {
+      res = await _fakeCallChannel.invokeMethod<Map<dynamic, dynamic>>('pickAudio');
+    } catch (_) {}
+    if (!mounted || res == null) return;
+    final uri = res['uri'] as String?;
+    final name = (res['name'] as String?) ?? '';
+    if (uri == null || uri.isEmpty) return;
+    final store = await _ensureStore();
+    await store.setFakeCallAudio(uri: uri, name: name);
+    if (!mounted) return;
+    setState(() {
+      _audioUri = uri;
+      _audioName = name;
+    });
+  }
+
+  Future<void> _removeAudio() async {
+    final store = await _ensureStore();
+    await store.clearFakeCallAudio();
+    if (!mounted) return;
+    setState(() {
+      _audioUri = null;
+      _audioName = '';
+      _endAfterAudio = false;
+    });
+  }
+
+  Future<void> _setEndAfterAudio(bool value) async {
+    final store = await _ensureStore();
+    await store.setFakeCallEndAfterAudio(value);
+    if (!mounted) return;
+    setState(() => _endAfterAudio = value);
   }
 
   @override
@@ -152,6 +209,36 @@ class _FakeCallSetupScreenState extends State<FakeCallSetupScreen> {
               border: const OutlineInputBorder(),
             ),
           ),
+          const SizedBox(height: 24),
+
+          // ── Call sound ─────────────────────────────────────────────────
+          Text(
+            s.audioSectionTitle,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          _ModeCard(
+            icon: Icons.music_note_outlined,
+            title: _audioUri == null ? s.audioFileChoose : _audioName,
+            subtitle: _audioUri == null ? s.audioFileDefault : s.audioFileLoopHint,
+            selected: _audioUri != null,
+            onTap: _pickAudio,
+            trailing: _audioUri == null
+                ? null
+                : IconButton(
+                    icon: const Icon(Icons.close),
+                    tooltip: s.audioFileRemove,
+                    onPressed: _removeAudio,
+                  ),
+          ),
+          if (_audioUri != null)
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              value: _endAfterAudio,
+              title: Text(s.audioFileEndAfter),
+              onChanged: (v) => _setEndAfterAudio(v ?? false),
+            ),
           const SizedBox(height: 24),
 
           // ── Delay slider ───────────────────────────────────────────────

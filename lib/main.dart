@@ -165,6 +165,8 @@ class _AppCallsRootState extends State<AppCallsRoot> {
           callerName: name,
           callerNumber: number,
           strings: AppStrings(language),
+          audioUri: widget.store.fakeCallAudioUri,
+          endAfterAudio: widget.store.fakeCallEndAfterAudio,
         ),
         fullscreenDialog: true,
       ),

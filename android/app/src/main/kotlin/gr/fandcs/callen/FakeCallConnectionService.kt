@@ -2,8 +2,12 @@ package gr.fandcs.callen
 
 import android.content.ComponentName
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.telecom.Connection
 import android.telecom.ConnectionRequest
 import android.telecom.ConnectionService
@@ -37,7 +41,7 @@ class FakeCallConnectionService : ConnectionService() {
     ): Connection {
         val (name, number) = readCaller(request)
         Log.d(TAG, "onCreateIncomingConnection name=$name number=$number")
-        return FakeConnection(name, number).apply {
+        return FakeConnection(applicationContext, name, number).apply {
             setInitialized()
             setRinging()
         }
@@ -62,7 +66,16 @@ class FakeCallConnectionService : ConnectionService() {
         return Pair(name, number)
     }
 
-    private class FakeConnection(name: String, number: String) : Connection() {
+    private class FakeConnection(
+        private val appContext: Context,
+        name: String,
+        number: String,
+    ) : Connection() {
+        private var player: MediaPlayer? = null
+        private var ended = false
+        private val handler = Handler(Looper.getMainLooper())
+        private val endAfterAudioRunnable = Runnable { finishCall(DisconnectCause.REMOTE) }
+
         init {
             setConnectionCapabilities(CAPABILITY_MUTE)
             setAddress(
@@ -75,21 +88,78 @@ class FakeCallConnectionService : ConnectionService() {
             }
         }
 
-        override fun onAnswer() { setActive() }
-        override fun onAnswer(videoState: Int) { setActive() }
+        override fun onAnswer() { answer() }
+        override fun onAnswer(videoState: Int) { answer() }
 
         override fun onReject() {
+            stopCallAudio()
             setDisconnected(DisconnectCause(DisconnectCause.REJECTED))
             destroy()
         }
 
         override fun onDisconnect() {
-            setDisconnected(DisconnectCause(DisconnectCause.LOCAL))
-            destroy()
+            finishCall(DisconnectCause.LOCAL)
         }
 
         override fun onAbort() {
+            stopCallAudio()
             setDisconnected(DisconnectCause(DisconnectCause.CANCELED))
+            destroy()
+        }
+
+        private fun answer() {
+            setActive()
+            startCallAudio()
+        }
+
+        /**
+         * Ενεργή κλήση: παίζει το αρχείο ήχου που έχει επιλέξει ο χρήστης στο Callen.
+         * Σε επανάληψη, ή μία φορά αν είναι ενεργό το tick (τότε τερματίζει 1 δευτ. μετά).
+         * Οι ρυθμίσεις διαβάζονται από τα SharedPreferences του Flutter (prefix "flutter.").
+         */
+        private fun startCallAudio() {
+            val prefs = appContext.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+            val uriString = prefs.getString("flutter.fake_call_audio_uri", null) ?: return
+            val endAfterAudio = prefs.getBoolean("flutter.fake_call_end_after_audio", false)
+            try {
+                val p = MediaPlayer()
+                p.setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build()
+                )
+                p.setDataSource(appContext, Uri.parse(uriString))
+                p.isLooping = !endAfterAudio
+                if (endAfterAudio) {
+                    p.setOnCompletionListener { handler.postDelayed(endAfterAudioRunnable, 1000L) }
+                }
+                p.prepare()
+                p.start()
+                player = p
+            } catch (e: Exception) {
+                Log.e(TAG, "startCallAudio failed", e)
+                stopCallAudio()
+            }
+        }
+
+        private fun stopCallAudio() {
+            handler.removeCallbacks(endAfterAudioRunnable)
+            player?.let {
+                try {
+                    if (it.isPlaying) it.stop()
+                } catch (e: Exception) {
+                }
+                it.release()
+            }
+            player = null
+        }
+
+        private fun finishCall(cause: Int) {
+            if (ended) return
+            ended = true
+            stopCallAudio()
+            setDisconnected(DisconnectCause(cause))
             destroy()
         }
     }

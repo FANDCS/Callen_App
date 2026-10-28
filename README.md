@@ -21,6 +21,7 @@ Features:
 - Support Fake and Real calls
 - Choose Contact source (between Device and SIM) 
 - No internet connection
+- Support custom sound file playing with the "call"
 - Sync with **yours** choice server (Supabase, Pocketbase, Custom REST)
 - Local encryption before sync data to server
 - Multi-platform

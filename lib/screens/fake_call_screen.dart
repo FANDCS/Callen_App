@@ -12,12 +12,18 @@ class FakeCallScreen extends StatefulWidget {
   final String callerName;
   final String callerNumber;
   final AppStrings strings;
+  // Αρχείο ήχου που παίζει όσο η κλήση είναι ενεργή (null = τίποτα)
+  final String? audioUri;
+  // Αν true, το αρχείο παίζει μία φορά και η κλήση τερματίζει 1 δευτ. μετά το τέλος του
+  final bool endAfterAudio;
 
   const FakeCallScreen({
     super.key,
     required this.callerName,
     required this.callerNumber,
     required this.strings,
+    this.audioUri,
+    this.endAfterAudio = false,
   });
 
   @override
@@ -34,6 +40,7 @@ class _FakeCallScreenState extends State<FakeCallScreen>
   bool _showKeypad = false;
   Timer? _durationTimer;
   Timer? _ringTimeoutTimer;
+  Timer? _endAfterAudioTimer;
   Duration _callDuration = Duration.zero;
 
   late final AnimationController _pulseController = AnimationController(
@@ -51,6 +58,7 @@ class _FakeCallScreenState extends State<FakeCallScreen>
   @override
   void initState() {
     super.initState();
+    _ringtoneChannel.setMethodCallHandler(_onRingtoneCall);
     _startRinging();
     _ringTimeoutTimer = Timer(_ringTimeout, _missedCall);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -64,6 +72,8 @@ class _FakeCallScreenState extends State<FakeCallScreen>
     _bgController.dispose();
     _durationTimer?.cancel();
     _ringTimeoutTimer?.cancel();
+    _endAfterAudioTimer?.cancel();
+    _ringtoneChannel.setMethodCallHandler(null);
     _ringtoneChannel.invokeMethod('release');
     super.dispose();
   }
@@ -71,6 +81,16 @@ class _FakeCallScreenState extends State<FakeCallScreen>
   void _startRinging() {
     _ringtoneChannel.invokeMethod('play');
     _vibrateLoop();
+  }
+
+  /// Το native μέρος στέλνει "audioCompleted" όταν τελειώσει το αρχείο μετά την απάντηση.
+  Future<void> _onRingtoneCall(MethodCall call) async {
+    if (call.method != 'audioCompleted') return;
+    if (!mounted || _ended || !widget.endAfterAudio) return;
+    _endAfterAudioTimer?.cancel();
+    _endAfterAudioTimer = Timer(const Duration(seconds: 1), () {
+      if (mounted && !_ended) _decline();
+    });
   }
 
   Future<void> _vibrateLoop() async {
@@ -94,7 +114,6 @@ class _FakeCallScreenState extends State<FakeCallScreen>
 
   void _answer() {
     _ringTimeoutTimer?.cancel();
-    _ringtoneChannel.invokeMethod('muteRingtone');
     _pulseController.stop();
     setState(() {
       _answered = true;
@@ -104,6 +123,15 @@ class _FakeCallScreenState extends State<FakeCallScreen>
       if (!mounted) return;
       setState(() => _callDuration += const Duration(seconds: 1));
     });
+    if (widget.audioUri != null) {
+      // Όσο η κλήση είναι ενεργή: σε επανάληψη, ή μία φορά αν είναι ενεργό το tick.
+      _ringtoneChannel.invokeMethod('playCallAudio', {
+        'uri': widget.audioUri,
+        'loop': !widget.endAfterAudio,
+      });
+    } else {
+      _ringtoneChannel.invokeMethod('muteRingtone');
+    }
   }
 
   String get _formattedDuration {

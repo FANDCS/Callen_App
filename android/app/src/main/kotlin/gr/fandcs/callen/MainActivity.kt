@@ -5,10 +5,12 @@ import android.app.NotificationManager
 import android.content.ContentResolver
 import android.content.Intent
 import android.media.AudioAttributes
+import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.provider.Settings
 import android.telecom.TelecomManager
 import android.view.WindowManager
@@ -23,7 +25,23 @@ class MainActivity : FlutterActivity() {
     private val simChannelName = "gr.fandcs.callen/sim"
     private val callLogChannelName = "gr.fandcs.callen/calllog"
     private var ringtone: android.media.Ringtone? = null
+    private var mediaPlayer: MediaPlayer? = null
+    private var ringtoneChannel: MethodChannel? = null
     private var fakeCallChannel: MethodChannel? = null
+    private var pendingAudioPick: MethodChannel.Result? = null
+
+    companion object {
+        private const val REQUEST_PICK_AUDIO = 4101
+
+        // Γνωστοί τύποι αρχείων ήχου για το φίλτρο του επιλογέα αρχείων.
+        private val AUDIO_MIME_TYPES = arrayOf(
+            "audio/mpeg", "audio/mp3", "audio/mp4", "audio/m4a", "audio/x-m4a",
+            "audio/aac", "audio/x-aac", "audio/wav", "audio/x-wav", "audio/wave",
+            "audio/ogg", "audio/opus", "audio/flac", "audio/x-flac", "audio/amr",
+            "audio/3gpp", "audio/3gpp2", "audio/midi", "audio/x-midi", "audio/webm",
+            "audio/x-ms-wma", "application/ogg",
+        )
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,15 +51,31 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, ringtoneChannelName)
-            .setMethodCallHandler { call, result ->
-                when (call.method) {
-                    "play" -> { playRingtone(); result.success(null) }
-                    "muteRingtone" -> { stopRingtoneSoundOnly(); result.success(null) }
-                    "release" -> { stopRingtoneSoundOnly(); result.success(null) }
-                    else -> result.notImplemented()
+        ringtoneChannel =
+            MethodChannel(flutterEngine.dartExecutor.binaryMessenger, ringtoneChannelName)
+        ringtoneChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                // Ήχος χτυπήματος κλήσης: ο κανονικός προεπιλεγμένος ήχος της συσκευής
+                "play" -> {
+                    playRingtone()
+                    result.success(null)
                 }
+                // Όσο η κλήση είναι ενεργή: παίζει το αρχείο ήχου (σε επανάληψη ή μία φορά)
+                "playCallAudio" -> {
+                    result.success(
+                        playCallAudio(
+                            call.argument<String>("uri") ?: "",
+                            call.argument<Boolean>("loop") ?: true,
+                        )
+                    )
+                }
+                "muteRingtone", "release" -> {
+                    stopRingtoneSoundOnly()
+                    result.success(null)
+                }
+                else -> result.notImplemented()
             }
+        }
 
         fakeCallChannel =
             MethodChannel(flutterEngine.dartExecutor.binaryMessenger, fakeCallChannelName)
@@ -68,6 +102,7 @@ class MainActivity : FlutterActivity() {
                     val target = call.argument<String>("target") ?: ""
                     result.success(openFakeCallSettings(target))
                 }
+                "pickAudio" -> pickAudioFile(result)
                 else -> result.notImplemented()
             }
         }
@@ -127,6 +162,66 @@ class MainActivity : FlutterActivity() {
         } catch (e: Exception) {
         }
         return results
+    }
+
+    // ---------------------------------------------------------------- audio file picker
+
+    @Suppress("DEPRECATION")
+    private fun pickAudioFile(result: MethodChannel.Result) {
+        if (pendingAudioPick != null) {
+            result.error("busy", "An audio pick is already in progress", null)
+            return
+        }
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "*/*"
+            putExtra(Intent.EXTRA_MIME_TYPES, AUDIO_MIME_TYPES)
+            addFlags(
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+            )
+        }
+        pendingAudioPick = result
+        try {
+            startActivityForResult(intent, REQUEST_PICK_AUDIO)
+        } catch (e: Exception) {
+            pendingAudioPick = null
+            result.success(null)
+        }
+    }
+
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode != REQUEST_PICK_AUDIO) {
+            super.onActivityResult(requestCode, resultCode, data)
+            return
+        }
+        val pending = pendingAudioPick ?: return
+        pendingAudioPick = null
+        val uri = if (resultCode == RESULT_OK) data?.data else null
+        if (uri == null) {
+            pending.success(null)
+            return
+        }
+        // Κρατάμε πρόσβαση στο αρχείο ώστε να παίζει και μετά από επανεκκίνηση.
+        try {
+            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        } catch (e: Exception) {
+        }
+        pending.success(mapOf("uri" to uri.toString(), "name" to displayNameOf(uri)))
+    }
+
+    private fun displayNameOf(uri: Uri): String {
+        try {
+            contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
+                if (it.moveToFirst()) {
+                    val idx = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (idx >= 0) return it.getString(idx) ?: ""
+                }
+            }
+        } catch (e: Exception) {
+        }
+        return uri.lastPathSegment ?: "audio"
     }
 
     // ---------------------------------------------------------------- fake call
@@ -218,8 +313,50 @@ class MainActivity : FlutterActivity() {
 
     // ---------------------------------------------------------------- ringtone
 
+    /** Ήχος χτυπήματος: ο προεπιλεγμένος ήχος κλήσης της συσκευής, μία φορά. */
     private fun playRingtone() {
         stopRingtoneSoundOnly()
+        playDefaultRingtone()
+    }
+
+    /**
+     * Όσο η κλήση είναι ενεργή. loop = true: επανάληψη μέχρι τέλος κλήσης.
+     * loop = false: παίζει μία φορά και στέλνει "audioCompleted" στο τέλος.
+     */
+    private fun playCallAudio(uriString: String, loop: Boolean): Boolean {
+        stopRingtoneSoundOnly()
+        if (uriString.isEmpty()) return false
+        val onDone: (() -> Unit)? =
+            if (loop) null else { { ringtoneChannel?.invokeMethod("audioCompleted", null) } }
+        return startCustomAudio(Uri.parse(uriString), loop, onFinished = onDone)
+    }
+
+    private fun startCustomAudio(uri: Uri, loop: Boolean, onFinished: (() -> Unit)?): Boolean {
+        var player: MediaPlayer? = null
+        return try {
+            player = MediaPlayer()
+            player.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
+            player.setDataSource(applicationContext, uri)
+            player.isLooping = loop
+            if (onFinished != null) {
+                player.setOnCompletionListener { onFinished() }
+            }
+            player.prepare()
+            player.start()
+            mediaPlayer = player
+            true
+        } catch (e: Exception) {
+            player?.release()
+            false
+        }
+    }
+
+    private fun playDefaultRingtone() {
         val uri = RingtoneManager.getActualDefaultRingtoneUri(
             applicationContext,
             RingtoneManager.TYPE_RINGTONE,
@@ -247,6 +384,15 @@ class MainActivity : FlutterActivity() {
             }
         }
         ringtone = null
+
+        mediaPlayer?.let {
+            try {
+                it.stop()
+            } catch (e: Exception) {
+            }
+            it.release()
+        }
+        mediaPlayer = null
     }
 
     override fun onDestroy() {

@@ -14,6 +14,9 @@ class SettingsStore {
   static const _keySyncLastPulledAt      = 'sync_last_pulled_at';
   static const _keyConfirmIntlCalls      = 'confirm_intl_calls';
   static const _keyDeleteFromAndroid     = 'delete_from_android';
+  static const _keyFakeCallAudioUri      = 'fake_call_audio_uri';
+  static const _keyFakeCallAudioName     = 'fake_call_audio_name';
+  static const _keyFakeCallEndAfterAudio = 'fake_call_end_after_audio';
 
   final SharedPreferences _prefs;
   SettingsStore._(this._prefs);
@@ -80,4 +83,31 @@ class SettingsStore {
   bool get deleteFromAndroid => _prefs.getBool(_keyDeleteFromAndroid) ?? true;
   Future<void> setDeleteFromAndroid(bool value) =>
       _prefs.setBool(_keyDeleteFromAndroid, value);
+
+  // ── Fake call audio ───────────────────────────────────────────────────────
+
+  /// URI του αρχείου ήχου κλήσης. null = προεπιλεγμένος ήχος συσκευής.
+  String? get fakeCallAudioUri {
+    final v = _prefs.getString(_keyFakeCallAudioUri);
+    return (v == null || v.isEmpty) ? null : v;
+  }
+
+  String get fakeCallAudioName => _prefs.getString(_keyFakeCallAudioName) ?? '';
+
+  /// Αν true (και υπάρχει αρχείο), η κλήση τερματίζεται 1 δευτ. μετά το τέλος του αρχείου.
+  bool get fakeCallEndAfterAudio => _prefs.getBool(_keyFakeCallEndAfterAudio) ?? false;
+
+  Future<void> setFakeCallAudio({required String uri, required String name}) async {
+    await _prefs.setString(_keyFakeCallAudioUri, uri);
+    await _prefs.setString(_keyFakeCallAudioName, name);
+  }
+
+  Future<void> clearFakeCallAudio() async {
+    await _prefs.remove(_keyFakeCallAudioUri);
+    await _prefs.remove(_keyFakeCallAudioName);
+    await _prefs.setBool(_keyFakeCallEndAfterAudio, false);
+  }
+
+  Future<void> setFakeCallEndAfterAudio(bool value) =>
+      _prefs.setBool(_keyFakeCallEndAfterAudio, value);
 }
